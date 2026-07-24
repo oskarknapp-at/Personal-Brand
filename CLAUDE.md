@@ -80,7 +80,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=23` (V23 / `v=23`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=24` (V24 / `v=24`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -213,6 +213,15 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-07-24 — About-Text ausgetauscht (V24):** Betreiber lieferte eine neue, gestraffte Fassung
+  des About-Fließtexts (`.about-text` in `index.html`). Vier Absätze ersetzt: (1) „Ich bin 15 und
+  mache Filme. Drehbuch, Regie, Kamera, Schnitt …", (2) ALLEIN als Drama über Mobbing + erste
+  Auszeichnung (Sonderpreis Jury, Clip, Postcard-Challenge 2026, „Was kommt danach?"), (3)
+  technisches Fundament IT-HTL Ybbs / Medientechnik + Rest autodidaktisch, (4) „Ich habe keinen
+  Plan, wo das hinführt … jedes nächste Projekt besser". Die Altersangabe „15" im ersten Absatz per
+  `<span data-age>15</span>` an die dynamische Alters-Berechnung gehängt (statt hartkodiert), damit
+  sie nach dem Geburtstag automatisch mitwandert. Version 23→24 (Cache-Buster + Footer-Marker in
+  allen drei HTML-Dateien). Branch `claude/about-text-austauschen-zp9mnw`.
 - **2026-07-24 — About-Portrait: verbesserte Fassung (V23):** Betreiber lud eine überarbeitete
   Version des Portraits (`DSC05657.jpg`, 3497×4663, Hintergrund/Steinwand weichgezeichnet → Fokus
   auf die Person) auf `main`. Gleiche Verarbeitung wie V22: auf 900×1200 verkleinert, progressive
