@@ -80,7 +80,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=22` (V22 / `v=22`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=23` (V23 / `v=23`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -165,10 +165,11 @@ nur die sichtbare Seite).
   (seit V22, `https://okmedia.at/assets/oskar-knapp-portrait.jpg`); zwei `VideoObject`
   (ALLEIN = `QDq6b3w08eM`, „Was kommt danach?" = `5XbbUtZ45v0`) — **beide seit V21 mit `uploadDate`**
   (monatsgenau, s. „Offene Punkte").
-- **About-Portrait:** Echtes Foto `assets/oskar-knapp-portrait.jpg` (900×1200, 3:4, ~140 KB JPEG,
+- **About-Portrait:** Echtes Foto `assets/oskar-knapp-portrait.jpg` (900×1200, 3:4, ~137 KB JPEG,
   EXIF entfernt) im `.about-portrait`-`<figure>`; CSS erzwingt `aspect-ratio: 3/4; object-fit: cover`.
-  Betreiber lud das Original als `DSC05657.jpg` (3497×4663, 455 KB) auf `main`; in V22 auf 900×1200
-  verkleinert, umbenannt, Original entfernt.
+  Betreiber lud das Original als `DSC05657.jpg` (3497×4663) auf `main`; jeweils auf 900×1200
+  verkleinert, umbenannt, Original entfernt. **Seit V23** die verbesserte Fassung (Hintergrund/
+  Steinwand weichgezeichnet → Fokus auf Person), gleiche Verarbeitung.
 - **Hero-Bild → -Video:** Der Platzhalter im Hero ist seit V17 durch das Showreel-Video ersetzt
   (s. o.). Das frühere `<img fetchpriority="high">` gibt es dort nicht mehr.
 
@@ -212,6 +213,12 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-07-24 — About-Portrait: verbesserte Fassung (V23):** Betreiber lud eine überarbeitete
+  Version des Portraits (`DSC05657.jpg`, 3497×4663, Hintergrund/Steinwand weichgezeichnet → Fokus
+  auf die Person) auf `main`. Gleiche Verarbeitung wie V22: auf 900×1200 verkleinert, progressive
+  JPEG q=86 → ~137 KB, EXIF entfernt, als `assets/oskar-knapp-portrait.jpg` gespeichert (überschreibt
+  die alte Fassung), Original entfernt. Version 22→23. Direkt per PR gemergt (Regel „immer gleich
+  mergen"). Branch `claude/search-console-indexing-issues-xpklmc`.
 - **2026-07-24 — About-Portrait eingebaut (V22):** Betreiber lud sein Portrait als
   `assets/DSC05657.jpg` (3497×4663, 455 KB) direkt auf `main`. In der Sandbox mit Pillow auf
   **900×1200** (3:4, passend zum CSS `aspect-ratio: 3/4`) verkleinert, progressive JPEG q=84 →
