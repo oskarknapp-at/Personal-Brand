@@ -43,7 +43,7 @@ Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS
 ## Dateien
 | Datei | Inhalt |
 |---|---|
-| `index.html` | Die gesamte Seite. Szenen: Hero, Projekte, Fotografie, About, Journey, Kontakt. (Szene 06 „Zusammenarbeit" + Projekte 3/4 ausgebaut, s. „Ausgeblendete Inhalte".) |
+| `index.html` | Die gesamte Seite. Szenen: 01 Hero, 02 Projekte, 03 Fotografie, 04 About, 05 Kontakt. (Journey, „Zusammenarbeit" + Projekte 3/4 ausgebaut, s. „Ausgeblendete Inhalte".) |
 | `main.js` | Gesamtes Verhalten, in nummerierte Abschnitte (1–6) gegliedert – siehe unten. |
 | `style.css` | Gesamtes Styling. Abschnitte per `/* ---------- … ---------- */`. Design-Tokens in `:root`. |
 | `impressum/`, `datenschutz/` | Rechtstexte, eigene `index.html`, teilen sich `../style.css`. |
@@ -62,15 +62,19 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
    3b. `setupGallery()` – justiertes Reihen-Layout, Fotos werden nicht beschnitten.
 4. `setupForm()` – Kontaktformular via **Web3Forms** (`fetch` auf `api.web3forms.com/submit`),
    ohne Reload. `access_key` steht als hidden input in `index.html` (öffentlich, kein Secret).
+   4b. `setupCharCount()` – Live-Zeichenzähler für das Nachrichtenfeld (Limit 300, Ampelfarben
+   grün/gelb/rot über `data-state` auf `#message-count`).
 5. `tcToFrames()` / `framesToTc()` – Timecode-Hilfen, 24 fps, Format `HH:MM:SS:FF`.
 6. `initMotion({…anime})` – alle Animationen (Hero-Timeline, Szenentitel, Timecode-Counter,
    generische `[data-animate]`-Reveals per `onScroll`).
 
 ## JS-Hooks (data-Attribute in HTML)
 `data-age`, `data-split` (Text→Buchstaben), `data-tc` (Timecode), `data-yt` (YouTube-ID), `data-animate` (Scroll-Reveal).
+Feste IDs: `#message` + `#message-count` (Zeichenzähler, per `data-state` eingefärbt).
 
 ## Design-Tokens (`:root` in style.css)
-`--paper #F2EDE4`, `--ink #1C1B19`, `--red #E63321` (einzige Akzentfarbe), `--mono` (IBM Plex Mono),
+`--paper #F2EDE4`, `--ink #1C1B19`, `--red #E63321` (einzige Akzentfarbe), `--green #2F6B46` /
+`--amber #8A5A00` (**nur** für den Zeichenzähler-Ampelzustand, sonst nirgends), `--mono` (IBM Plex Mono),
 `--display` (Archivo), `--gutter` (Seitenränder). Rot sparsam einsetzen.
 
 ## Konventionen
@@ -80,7 +84,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=25` (V25 / `v=25`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=26` (V26 / `v=26`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -116,6 +120,16 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   starten direkt mit Ton. **Safari blockiert nachgeladenes Autoplay grundsätzlich** → dort zeigt der
   Player seinen eigenen Play-Button, erst der Klick darauf startet mit Ton. Kein Bug. 10-s-Timeout
   setzt den Embed zurück, falls die API nicht erreichbar ist (Blocker/Netz weg).
+- **Zeichenzähler** (`setupCharCount`): Das harte Limit steht als `maxlength="300"` im HTML, damit es
+  **auch ohne JS** greift (Progressive Enhancement); JS liest den Wert aus dem Attribut, keine zweite
+  Zahl im Code. Der Zähler-Absatz steht mit „0 / 300 ZEICHEN" fertig im HTML, JS überschreibt ihn nur.
+  Schwellen: `< 75 %` grün, `75–92 %` gelb, `≥ 93 %` (ab 279) rot — über `data-state="low|mid|high"`,
+  Farben kommen aus dem CSS. Gezählt wird mit `[...value].length` (Code-Points), damit ein Emoji als
+  ein Zeichen zählt; `maxlength` selbst zählt UTF-16-Einheiten — winzige Abweichung, bewusst.
+  **Kein `aria-live`** (würde bei jedem Tastendruck vorlesen), stattdessen `aria-describedby` am
+  `<textarea>`: Screenreader lesen den Stand beim Fokussieren vor. Ein `reset`-Listener am Formular
+  setzt den Zähler nach erfolgreichem Versand (`form.reset()` in `setupForm`) wieder auf 0 — per
+  `requestAnimationFrame`, weil das `reset`-Event **vor** dem Leeren der Felder feuert.
 - **Formular-Honeypot** (`setupForm`): verstecktes, leer erwartetes Feld gegen Spam-Bots. Der
   Web3Forms-`access_key` ist ein **öffentlicher** Schlüssel und darf im Client-HTML stehen.
 - **Szenen-Titel-Reveal** nutzt anime.js `sync: "play"`: einmal ausgelöst, läuft die Animation
@@ -137,10 +151,14 @@ Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Fo
 nur die sichtbare Seite).
 
 ### Aktueller Stand (Stand 2026-07-25)
-- **Live-Version:** V24 ist live (About-Text gemergt in `main`); **V25** (`v=25`, dieser Stand)
-  zieht den Papier-Grundton wärmer/gelblicher: `--paper` von `#E8E6E1` auf **`#F2EDE4`**. Geht mit
-  dem nächsten Merge live. (Ablauf: … → V22 = About-Portrait → V23 = Portrait v2 →
-  V24 = About-Text → V25 = wärmerer Papierton.)
+- **Live-Version:** V25 ist live (wärmerer Papierton gemergt in `main`); **V26** (`v=26`, dieser
+  Stand) baut die **Journey-Szene aus** (ins Archiv, s. „Ausgeblendete Inhalte" Block 5) und ergänzt
+  den **Zeichenzähler** im Kontaktformular. (Ablauf: … → V23 = Portrait v2 → V24 = About-Text →
+  V25 = wärmerer Papierton → V26 = Journey raus + Zeichenzähler.)
+- **Szenen-Nummerierung aktuell:** 01 Hero, 02 Projekte, 03 Fotografie, 04 About, **05 Kontakt**
+  (Kontakt war vorher 06). Bei Wiedereinbau der Journey wandert Kontakt zurück auf 06.
+- **Kontaktformular:** Nachrichtenfeld hat ein Limit von **300 Zeichen** (`maxlength`) mit
+  Live-Zähler „N / 300 ZEICHEN" unter dem Feld, Farbe grün → gelb (ab 225) → rot (ab 279).
 - **Papierton `--paper: #F2EDE4`:** Betreiberwunsch „Richtung gelbliche Oka-Töne". Exakte Mitte
   zwischen dem alten `#E8E6E1` und der gewünschten Zielfarbe `#FBF3E7` (kanalweiser Mittelwert:
   232/251→242, 230/243→237, 225/231→228). Mitgezogen: `<meta name="theme-color">` und die helle
@@ -179,9 +197,10 @@ nur die sichtbare Seite).
   (s. o.). Das frühere `<img fetchpriority="high">` gibt es dort nicht mehr.
 
 ### Offene Punkte (TODO)
-- **Placeholder** (Betreiber liefert Medien selbst): `og:image`, 3× Journey-Videos
-  (`data-yt="DEINE_YOUTUBE_ID"` + `placehold.co`-Thumbnails). Solange offen, keine Panik – sind
-  bewusst so. (Hero-Showreel-Still nicht mehr offen: Der Hero zeigt jetzt das Video. Optional könnte
+- **Placeholder** (Betreiber liefert Medien selbst): `og:image`. Die 3× Journey-Videos
+  (`data-yt="DEINE_YOUTUBE_ID"` + `placehold.co`-Thumbnails) sind **seit V26 nicht mehr auf der
+  Seite** — der ganze Journey-Block liegt im Archiv (s. „Ausgeblendete Inhalte" Block 5) und kommt
+  mit echten YouTube-IDs zurück. (Hero-Showreel-Still nicht mehr offen: Der Hero zeigt jetzt das Video. Optional könnte
   später ein leichtes `poster="assets/…"`-Still für ersten Eindruck & reduced-motion nachgezogen
   werden.)
 - **About-Portrait — erledigt (V22):** Echtes Foto `assets/oskar-knapp-portrait.jpg` (900×1200, 3:4,
@@ -218,6 +237,25 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-07-25 — Journey ausgebaut + Zeichenzähler im Kontaktformular (V26):** Der Betreiber hatte
+  die Journey-Szene direkt auf `main` mit `<!-- … -->` auskommentiert. Auskommentierter Code
+  verstößt gegen die harte Regel „kein Kommentar im ausgelieferten Code" (und wird trotzdem
+  ausgeliefert) → Block **gelöscht** und stattdessen vollständig in **„Ausgeblendete Inhalte"
+  Block 5** archiviert, inklusive Wiedereinbau-Checkliste. Mitgezogen: Nav-Link
+  `<a href="#journey">` entfernt (zeigte sonst ins Leere), Kontakt-Slug `SZENE 06` → **`SZENE 05`**
+  (keine Lücke in der Drehbuch-Nummerierung, gleiches Vorgehen wie beim Ausbau der
+  „Zusammenarbeit"-Szene), `llms.txt` ohne „Journey". CSS (`.scene--journey`, `.journey-*`) bleibt
+  liegen — kostet ~nichts und macht den Wiedereinbau zum reinen Copy-Paste.
+  **Zeichenzähler:** `<textarea id="message">` hat jetzt `maxlength="300"`, darunter
+  `<p class="char-count" id="message-count">` mit „N / 300 ZEICHEN". Neue Funktion
+  `setupCharCount()` in `main.js` zählt live mit und setzt `data-state` (`low` < 225, `mid` 225–278,
+  `high` ab 279 = 93 %); CSS färbt grün `--green #2F6B46` → gelb/ocker `--amber #8A5A00` → rot
+  `--red`, mit 200-ms-Farbübergang. Beide neuen Tokens sind AA-tauglich auf dem Papierton
+  (5,4:1 bzw. 5,1:1). Ohne JS bleibt das Limit über `maxlength` wirksam, der Zähler steht statisch
+  auf „0 / 300 ZEICHEN". Nach erfolgreichem Versand setzt ein `reset`-Listener den Zähler zurück.
+  Lokal per Playwright geprüft (Schwellen 224/225/278/279/300, `maxlength` greift, Reset auf 0,
+  Journey-Sektion und Nav-Link weg). Version 25→26 (Cache-Buster + Footer-Marker in allen drei
+  HTML-Dateien). Branch `claude/journey-contact-char-counter-8qmrwt`.
 - **2026-07-25 — Papierton wärmer/gelblicher (V25):** Betreiber wollte den Hintergrund „etwas in
   Richtung der gelblichen Oka-Farben", ungefähr die Mitte zwischen dem bisherigen Ton und `#FBF3E7`.
   `--paper` in `style.css` von `#E8E6E1` auf **`#F2EDE4`** gesetzt (kanalweiser Mittelwert der
@@ -310,11 +348,15 @@ nur die sichtbare Seite).
 
 ---
 
-## Ausgeblendete Inhalte (reaktivieren nach Gewerbeanmeldung)
+## Ausgeblendete Inhalte (Archiv — jederzeit 1:1 wieder einbaubar)
 
-**Grund:** Noch kein Gewerbe angemeldet → keine kommerziellen Angebote auf der Seite, auch nicht
-als HTML-Kommentar im Quelltext. Die Blöcke unten sind der vollständige Originalstand und werden
-**1:1 wieder eingebaut**, sobald das Gewerbe existiert. Bis dahin: nichts davon auf die Seite!
+**Grundregel:** Ausgebaute Seitenteile werden **nicht auskommentiert**, sondern aus dem Quelltext
+**gelöscht** und hier im vollständigen Originalstand archiviert (harte Regel „kein Kommentar im
+ausgelieferten Code"). Wiedereinbau = Block von hier 1:1 zurückkopieren.
+
+**Blöcke 1–4 (kommerzielle Inhalte):** Noch kein Gewerbe angemeldet → keine kommerziellen Angebote
+auf der Seite. Werden reaktiviert, sobald das Gewerbe existiert. Bis dahin: nichts davon auf die
+Seite! **Block 5 (Journey):** vom Betreiber ausgebaut, hat mit dem Gewerbe nichts zu tun.
 
 > Hinweis: Das Repo (und damit diese Datei) ist öffentlich – GitHub Pages liefert auch `CLAUDE.md`
 > aus. Im Quelltext der *Seite* taucht nichts mehr auf, „geheim" ist dieses Archiv aber nicht.
@@ -449,4 +491,64 @@ Wieder in den `@graph` des JSON-LD in `index.html` einfügen (nach dem `Person`-
     }
   ]
 }
+```
+
+### 5. Szene 05 / Journey (Doku-Serie)
+**Grund:** Ausgebaut am 2026-07-25 auf Betreiberwunsch (die drei Folgen sind noch reine
+`placehold.co`-Platzhalter mit `data-yt="DEINE_YOUTUBE_ID"`, die Serie ist noch nicht online).
+Kein Gewerbe-Thema. Wieder einfügen in `index.html` **zwischen** Szene 04 (About) und der
+Kontakt-Szene.
+
+**Beim Wiedereinbau ebenfalls:**
+- Nav-Link `<a href="#journey">JOURNEY</a>` in `#site-menu` wieder ergänzen (zwischen ABOUT und KONTAKT).
+- Kontakt-Slug zurück auf `SZENE 06 / INT. POSTFACH / NACHT` (steht jetzt auf `SZENE 05`).
+- In `llms.txt` die Startseiten-Zeile wieder um „Journey" ergänzen.
+- CSS (`.scene--journey`, `.journey-*`) ist unverändert in `style.css` vorhanden, nichts zu tun.
+
+```html
+    <section id="journey" class="scene scene--journey">
+      <div class="scene-head" data-animate>
+        <span class="slug">SZENE 05 / EXT. UNTERWEGS / TAG</span>
+        <span class="tc" data-tc="00:05:58:08">TC&nbsp;00:05:58:08</span>
+      </div>
+      <h2 class="scene-title" data-split>JOURNEY</h2>
+
+      <p class="journey-intro" data-animate>Auf YouTube dokumentiere ich den ganzen Weg als fortlaufende Doku-Serie. Keine Tutorials, keine Tipps von oben herab. Nur was ich mache, was schiefgeht und was ich daraus lerne.</p>
+
+      <div class="journey-grid">
+
+        <article class="journey-item" data-animate>
+          <div class="embed" data-yt="DEINE_YOUTUBE_ID">
+            <img class="embed-thumb" src="https://placehold.co/800x450/23211E/E8E6E1?text=DOKU+FOLGE+%2F+PLATZHALTER"
+                 alt="Platzhalter für eine Folge der Doku-Serie" loading="lazy" width="800" height="450">
+            <button class="embed-play" type="button" aria-label="Video abspielen">
+              <svg viewBox="0 0 68 48" aria-hidden="true"><path class="yt-bg" d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z"/><path class="yt-tri" d="M45 24 27 14v20z"/></svg>
+            </button>
+          </div>
+          <p class="mono-label">FOLGE / WARUM KEINE FILMSCHULE</p>
+        </article>
+        <article class="journey-item journey-item--down" data-animate>
+          <div class="embed" data-yt="DEINE_YOUTUBE_ID">
+            <img class="embed-thumb" src="https://placehold.co/800x450/23211E/E8E6E1?text=DOKU+FOLGE+%2F+PLATZHALTER"
+                 alt="Platzhalter für eine Folge der Doku-Serie" loading="lazy" width="800" height="450">
+            <button class="embed-play" type="button" aria-label="Video abspielen">
+              <svg viewBox="0 0 68 48" aria-hidden="true"><path class="yt-bg" d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z"/><path class="yt-tri" d="M45 24 27 14v20z"/></svg>
+            </button>
+          </div>
+          <p class="mono-label">FOLGE / HINTER DEN KULISSEN VON ALLEIN</p>
+        </article>
+        <article class="journey-item journey-item--lower" data-animate>
+          <div class="embed" data-yt="DEINE_YOUTUBE_ID">
+            <img class="embed-thumb" src="https://placehold.co/800x450/23211E/E8E6E1?text=DOKU+FOLGE+%2F+PLATZHALTER"
+                 alt="Platzhalter für eine Folge der Doku-Serie" loading="lazy" width="800" height="450">
+            <button class="embed-play" type="button" aria-label="Video abspielen">
+              <svg viewBox="0 0 68 48" aria-hidden="true"><path class="yt-bg" d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z"/><path class="yt-tri" d="M45 24 27 14v20z"/></svg>
+            </button>
+          </div>
+          <p class="mono-label">FOLGE / MEIN ERSTER DREH</p>
+        </article>
+      </div>
+
+      <a class="journey-cta" href="https://www.youtube.com/@oskar_knapp?sub_confirmation=1" target="_blank" rel="noopener">KANAL ABONNIEREN / @oskar_knapp</a>
+    </section>
 ```

@@ -275,6 +275,30 @@ function setupForm() {
   });
 }
 
+function setupCharCount() {
+  const field = $("#message");
+  const output = $("#message-count");
+  if (!field || !output) return;
+
+  const limit = Number(field.getAttribute("maxlength")) || 300;
+
+  const render = () => {
+    const used = [...field.value].length;
+    const ratio = used / limit;
+    output.textContent = `${used} / ${limit} ZEICHEN`;
+    output.dataset.state = ratio >= 0.93 ? "high" : ratio >= 0.75 ? "mid" : "low";
+  };
+
+  field.addEventListener("input", render);
+  if (field.form) {
+    field.form.addEventListener("reset", () => {
+      requestAnimationFrame(render);
+    });
+  }
+
+  render();
+}
+
 const FPS = 24;
 
 function tcToFrames(tc) {
@@ -401,6 +425,7 @@ setupBurger();
 setupEmbeds();
 setupGallery();
 setupForm();
+setupCharCount();
 setupHeroVideo();
 
 if (!reducedMotion) {
