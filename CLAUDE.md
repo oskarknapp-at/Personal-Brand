@@ -70,7 +70,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
 `data-age`, `data-split` (Text→Buchstaben), `data-tc` (Timecode), `data-yt` (YouTube-ID), `data-animate` (Scroll-Reveal).
 
 ## Design-Tokens (`:root` in style.css)
-`--paper #E8E6E1`, `--ink #1C1B19`, `--red #E63321` (einzige Akzentfarbe), `--mono` (IBM Plex Mono),
+`--paper #F2EDE4`, `--ink #1C1B19`, `--red #E63321` (einzige Akzentfarbe), `--mono` (IBM Plex Mono),
 `--display` (Archivo), `--gutter` (Seitenränder). Rot sparsam einsetzen.
 
 ## Konventionen
@@ -80,7 +80,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=24` (V24 / `v=24`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=25` (V25 / `v=25`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -136,16 +136,21 @@ Erledigtes aus „Offene Punkte" streichen, neuen Eintrag in „Historie" (oben 
 Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Footer-Marker betrifft
 nur die sichtbare Seite).
 
-### Aktueller Stand (Stand 2026-07-24)
-- **Live-Version:** V21 ist live (Search-Console-Fixes gemergt in `main`, Deploy `success`); **V22**
-  (`v=22`, dieser Stand) ersetzt den About-Portrait-Platzhalter durch das echte Foto
-  `assets/oskar-knapp-portrait.jpg` und ergänzt `image` im Person-Schema. Geht mit dem nächsten Merge
-  live. (Ablauf: … → V20 = ARIA-Fix + kommentarfrei → V21 = `uploadDate` + Search-Console →
-  V22 = About-Portrait.)
+### Aktueller Stand (Stand 2026-07-25)
+- **Live-Version:** V24 ist live (About-Text gemergt in `main`); **V25** (`v=25`, dieser Stand)
+  zieht den Papier-Grundton wärmer/gelblicher: `--paper` von `#E8E6E1` auf **`#F2EDE4`**. Geht mit
+  dem nächsten Merge live. (Ablauf: … → V22 = About-Portrait → V23 = Portrait v2 →
+  V24 = About-Text → V25 = wärmerer Papierton.)
+- **Papierton `--paper: #F2EDE4`:** Betreiberwunsch „Richtung gelbliche Oka-Töne". Exakte Mitte
+  zwischen dem alten `#E8E6E1` und der gewünschten Zielfarbe `#FBF3E7` (kanalweiser Mittelwert:
+  232/251→242, 230/243→237, 225/231→228). Mitgezogen: `<meta name="theme-color">` und die helle
+  Textfarbe im Favicon-Data-URI in allen drei HTML-Dateien. Die dunklen Töne (`#181714`, `#23211E`)
+  bleiben unverändert, ebenso `placehold.co`-URLs (Platzhalter, verschwinden ohnehin).
 - **Lighthouse (23.07.26, Moto G Power / Slow 4G):** Performance 94, Accessibility 92,
   Best Practices 100, SEO 100, Agentic Browsing 2/3 → **nach V20-ARIA-Fix 3/3 erwartet**.
-  Bewusst offen gelassen: **Kontrast** (Signalrot `#E63321` auf Papier = 3,46:1, unter AA 4,5:1
-  für kleinen Text bei `.tc`/`.scroll-hint`/`.journey-cta`) — Betreiber will das helle Brand-Rot
+  Bewusst offen gelassen: **Kontrast** (Signalrot `#E63321` auf Papier — mit dem hellerem V25-Papier
+  3,71:1 statt vorher 3,46:1, weiterhin unter AA 4,5:1 für kleinen Text bei
+  `.tc`/`.scroll-hint`/`.journey-cta`) — Betreiber will das helle Brand-Rot
   behalten, Accessibility bleibt daher bei 92. **Performance-Hebel liegen beim Betreiber:**
   Hero-`show_reel.mp4` ist 3,8 MB (LCP-Element, LCP 3,1 s) → Kompression + `poster`-Still nötig
   (in Sandbox mangels ffmpeg nicht machbar); Cache-TTL/CSP/HSTS sind GitHub-Pages-Serverconfig.
@@ -213,6 +218,17 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-07-25 — Papierton wärmer/gelblicher (V25):** Betreiber wollte den Hintergrund „etwas in
+  Richtung der gelblichen Oka-Farben", ungefähr die Mitte zwischen dem bisherigen Ton und `#FBF3E7`.
+  `--paper` in `style.css` von `#E8E6E1` auf **`#F2EDE4`** gesetzt (kanalweiser Mittelwert der
+  beiden Farben). Da der Token überall per `var(--paper)` genutzt wird, reichte die eine Zeile für
+  das gesamte Styling; zusätzlich in allen drei HTML-Dateien nachgezogen: `<meta name="theme-color">`
+  und die helle „OK"-Textfarbe im Favicon-Data-URI. Unverändert: dunkle Töne (`#181714`, `#23211E`)
+  und die `placehold.co`-Platzhalter-URLs. Kontrast Rot/Papier steigt leicht von 3,46:1 auf 3,71:1
+  (immer noch bewusst unter AA, s. „Aktueller Stand"), Ink/Papier bleibt bei ~14,7:1. Lokal per
+  Playwright-Screenshot geprüft (`body` berechnet `rgb(242, 237, 228)`). Version 24→25
+  (Cache-Buster + Footer-Marker in allen drei HTML-Dateien).
+  Branch `claude/background-color-oka-tones-aoet2v`.
 - **2026-07-24 — About-Text ausgetauscht (V24):** Betreiber lieferte eine neue, gestraffte Fassung
   des About-Fließtexts (`.about-text` in `index.html`). Vier Absätze ersetzt: (1) „Ich bin 15 und
   mache Filme. Drehbuch, Regie, Kamera, Schnitt …", (2) ALLEIN als Drama über Mobbing + erste
