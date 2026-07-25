@@ -235,6 +235,174 @@ function setupGallery() {
   }, { passive: true });
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
+
+const MAIL_DOMAINS = [
+  "gmail.com", "googlemail.com", "gmx.at", "gmx.net", "gmx.de", "web.de",
+  "hotmail.com", "outlook.com", "outlook.at", "live.at", "icloud.com",
+  "yahoo.com", "aon.at", "a1.net", "chello.at", "kabsi.at",
+];
+
+const CHECK_ICON =
+  '<svg class="field-check" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+  '<circle class="check-ring" cx="12" cy="12" r="9"/>' +
+  '<path class="check-mark" d="M7.6 12.3l2.9 2.9 5.9-6.3"/>' +
+  '<path class="check-bang" d="M12 7.3v5.1"/>' +
+  '<path class="check-dot" d="M12 16.4v0.01"/>' +
+  "</svg>";
+
+let checkEmail = () => true;
+
+function editDistance(a, b) {
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i += 1) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = row;
+  }
+  return prev[b.length];
+}
+
+function suggestDomain(domain) {
+  const value = domain.toLowerCase();
+  const dot = value.lastIndexOf(".");
+  if (dot < 1 || MAIL_DOMAINS.includes(value)) return "";
+
+  const name = value.slice(0, dot);
+  const tld = value.slice(dot + 1);
+
+  for (const known of MAIL_DOMAINS) {
+    const knownDot = known.lastIndexOf(".");
+    const knownName = known.slice(0, knownDot);
+    const knownTld = known.slice(knownDot + 1);
+    const limit = knownName.length <= 4 ? 1 : 2;
+
+    if (knownTld === tld && editDistance(name, knownName) <= limit) return known;
+    if (knownName === name && editDistance(tld, knownTld) === 1) return known;
+  }
+  return "";
+}
+
+function emailProblem(value) {
+  const at = value.indexOf("@");
+  if (at < 0) return "FEHLT / Das @-Zeichen fehlt.";
+  if (at === 0) return "PRÜFEN / Vor dem @ fehlt der Name.";
+
+  const domain = value.slice(at + 1);
+  if (!domain) return "PRÜFEN / Nach dem @ fehlt die Domain, z. B. gmail.com";
+  if (!domain.includes(".")) return "PRÜFEN / Der Domain fehlt die Endung, z. B. .at oder .com";
+  return "PRÜFEN / Das sieht noch nicht nach einer E-Mail-Adresse aus.";
+}
+
+function setupEmailCheck() {
+  const input = $("#email");
+  if (!input) return;
+
+  const field = input.closest(".field");
+  const wrap = $(".field-input", field);
+  const hint = $(".field-hint", field);
+  if (!wrap || !hint) return;
+
+  wrap.insertAdjacentHTML("beforeend", CHECK_ICON);
+
+  let touched = false;
+  let timer;
+  let shown = "";
+
+  const setHint = (key, render) => {
+    if (shown === key) return;
+    shown = key;
+    hint.textContent = "";
+    if (render) render();
+  };
+
+  const clear = () => {
+    delete field.dataset.state;
+    input.removeAttribute("aria-invalid");
+    setHint("");
+  };
+
+  const evaluate = (force) => {
+    const value = input.value.trim();
+    if (!value) {
+      clear();
+      return true;
+    }
+
+    if (EMAIL_PATTERN.test(value)) {
+      field.dataset.state = "ok";
+      input.removeAttribute("aria-invalid");
+
+      const at = value.lastIndexOf("@");
+      const better = suggestDomain(value.slice(at + 1));
+      if (!better) {
+        setHint("");
+        return true;
+      }
+
+      const fixed = `${value.slice(0, at)}@${better}`;
+      setHint(`fix:${fixed}`, () => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "hint-fix";
+        button.textContent = fixed;
+        button.addEventListener("click", () => {
+          input.value = fixed;
+          touched = true;
+          evaluate(true);
+          input.focus();
+        });
+        hint.append("MEINTEST DU / ", button, " ?");
+      });
+      return true;
+    }
+
+    if (!force && !touched) {
+      clear();
+      return false;
+    }
+
+    field.dataset.state = "error";
+    input.setAttribute("aria-invalid", "true");
+    const text = emailProblem(value);
+    setHint(text, () => {
+      hint.textContent = text;
+    });
+    return false;
+  };
+
+  input.addEventListener("input", () => {
+    clearTimeout(timer);
+    if (touched) {
+      evaluate(false);
+      return;
+    }
+    timer = setTimeout(() => evaluate(false), 350);
+  });
+
+  input.addEventListener("blur", () => {
+    clearTimeout(timer);
+    if (input.value.trim()) touched = true;
+    evaluate(true);
+  });
+
+  if (input.form) {
+    input.form.addEventListener("reset", () => {
+      clearTimeout(timer);
+      touched = false;
+      clear();
+    });
+  }
+
+  checkEmail = () => {
+    touched = true;
+    return evaluate(true);
+  };
+}
+
 function setupForm() {
   const form = $(".contact-form");
   if (!form) return;
@@ -249,6 +417,13 @@ function setupForm() {
     if (!form.access_key.value || form.access_key.value === "DEIN_ACCESS_KEY") {
       status.dataset.state = "error";
       status.textContent = "FEHLER / Formular noch nicht aktiv. Access Key von web3forms.com eintragen.";
+      return;
+    }
+
+    if (!checkEmail()) {
+      status.dataset.state = "error";
+      status.textContent = "PRÜFEN / Bitte die E-Mail-Adresse korrigieren.";
+      form.email.focus();
       return;
     }
 
@@ -400,6 +575,7 @@ setupProgress();
 setupBurger();
 setupEmbeds();
 setupGallery();
+setupEmailCheck();
 setupForm();
 setupHeroVideo();
 
