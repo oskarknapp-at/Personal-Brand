@@ -32,8 +32,6 @@
   --paper: #F2EDE4;
   --ink: #1C1B19;
   --red: #E63321;
-  --green: #2F6B46;
-  --amber: #8A5A00;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --gutter: clamp(1rem, 4vw, 4rem);
@@ -622,30 +620,6 @@ body.menu-open { overflow: hidden; }
 }
 
 .field textarea { resize: none; }
-
-.char-count {
-  margin: 0.4rem 0 0;
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  text-align: right;
-  color: var(--green);
-  visibility: hidden;
-  opacity: 0;
-  transition: color 200ms ease, opacity 200ms ease;
-}
-
-.char-count[data-visible] {
-  visibility: visible;
-  opacity: 1;
-}
-
-.char-count[data-state="mid"] { color: var(--amber); }
-
-.char-count[data-state="high"] {
-  color: var(--red);
-  font-weight: 600;
-}
 
 .field input:focus-visible,
 .field textarea:focus-visible {
