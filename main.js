@@ -288,13 +288,13 @@ function suggestDomain(domain) {
 
 function emailProblem(value) {
   const at = value.indexOf("@");
-  if (at < 0) return "FEHLT / Das @-Zeichen fehlt.";
-  if (at === 0) return "PRÜFEN / Vor dem @ fehlt der Name.";
+  if (at < 0) return "Das @-Zeichen fehlt.";
+  if (at === 0) return "Vor dem @ fehlt der Name.";
 
   const domain = value.slice(at + 1);
-  if (!domain) return "PRÜFEN / Nach dem @ fehlt die Domain, z. B. gmail.com";
-  if (!domain.includes(".")) return "PRÜFEN / Der Domain fehlt die Endung, z. B. .at oder .com";
-  return "PRÜFEN / Das sieht noch nicht nach einer E-Mail-Adresse aus.";
+  if (!domain) return "Nach dem @ fehlt die Domain, z. B. gmail.com";
+  if (!domain.includes(".")) return "Der Domain fehlt die Endung, z. B. .at oder .com";
+  return "Bitte eine vollständige E-Mail-Adresse eingeben.";
 }
 
 function setupEmailCheck() {
@@ -424,6 +424,13 @@ function setupForm() {
       status.dataset.state = "error";
       status.textContent = "PRÜFEN / Bitte die E-Mail-Adresse korrigieren.";
       form.email.focus();
+      return;
+    }
+
+    if (!form.message.value.trim()) {
+      status.dataset.state = "error";
+      status.textContent = "PRÜFEN / Bitte noch eine Nachricht schreiben.";
+      form.message.focus();
       return;
     }
 
