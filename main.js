@@ -281,12 +281,14 @@ function setupCharCount() {
   if (!field || !output) return;
 
   const limit = Number(field.getAttribute("maxlength")) || 300;
+  const showFrom = 200;
 
   const render = () => {
     const used = [...field.value].length;
     const ratio = used / limit;
     output.textContent = `${used} / ${limit} ZEICHEN`;
     output.dataset.state = ratio >= 0.93 ? "high" : ratio >= 0.75 ? "mid" : "low";
+    output.toggleAttribute("data-visible", used >= showFrom);
   };
 
   field.addEventListener("input", render);
