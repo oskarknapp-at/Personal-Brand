@@ -32,6 +32,7 @@
   --paper: #F2EDE4;
   --ink: #1C1B19;
   --red: #E63321;
+  --green: #2F6B46;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --gutter: clamp(1rem, 4vw, 4rem);
@@ -627,6 +628,93 @@ body.menu-open { overflow: hidden; }
   outline-offset: 0;
   border-color: var(--red);
 }
+
+.field-input { position: relative; }
+
+.field--email .field-input input { padding-right: 2.9rem; }
+
+.field-check {
+  position: absolute;
+  right: 0.85rem;
+  top: 50%;
+  width: 1.3rem;
+  height: 1.3rem;
+  transform: translateY(-50%);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease-out;
+}
+
+.check-mark,
+.check-bang,
+.check-dot { display: none; }
+
+.check-mark {
+  stroke-dasharray: 17;
+  stroke-dashoffset: 17;
+}
+
+.field--email[data-state="ok"] .field-check {
+  opacity: 1;
+  color: var(--green);
+}
+
+.field--email[data-state="ok"] .check-mark {
+  display: block;
+  animation: check-draw 260ms ease-out forwards;
+}
+
+.field--email[data-state="error"] .field-check {
+  opacity: 1;
+  color: var(--red);
+}
+
+.field--email[data-state="error"] .check-bang,
+.field--email[data-state="error"] .check-dot { display: block; }
+
+@keyframes check-draw {
+  from { stroke-dashoffset: 17; }
+  to { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-check { transition: none; }
+  .field--email[data-state="ok"] .check-mark {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+.field-hint {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  margin: 0;
+  color: var(--red);
+}
+
+.field-hint:not(:empty) { margin-top: 0.5rem; }
+
+.field--email[data-state="ok"] .field-hint { color: var(--ink); }
+
+.hint-fix {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  padding: 0;
+  cursor: pointer;
+}
+
+.hint-fix:hover { color: var(--red); }
 
 .submit {
   font-family: var(--mono);

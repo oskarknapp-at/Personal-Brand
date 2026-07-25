@@ -62,6 +62,8 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
    3b. `setupGallery()` – justiertes Reihen-Layout, Fotos werden nicht beschnitten.
 4. `setupForm()` – Kontaktformular via **Web3Forms** (`fetch` auf `api.web3forms.com/submit`),
    ohne Reload. `access_key` steht als hidden input in `index.html` (öffentlich, kein Secret).
+   4b. `setupEmailCheck()` + `editDistance()` / `suggestDomain()` / `emailProblem()` – Live-Prüfung
+   des E-Mail-Feldes (grüner Haken / roter Hinweis / Tippfehler-Vorschlag), s. „Code-Notizen".
 5. `tcToFrames()` / `framesToTc()` – Timecode-Hilfen, 24 fps, Format `HH:MM:SS:FF`.
 6. `initMotion({…anime})` – alle Animationen (Hero-Timeline, Szenentitel, Timecode-Counter,
    generische `[data-animate]`-Reveals per `onScroll`).
@@ -70,7 +72,8 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
 `data-age`, `data-split` (Text→Buchstaben), `data-tc` (Timecode), `data-yt` (YouTube-ID), `data-animate` (Scroll-Reveal).
 
 ## Design-Tokens (`:root` in style.css)
-`--paper #F2EDE4`, `--ink #1C1B19`, `--red #E63321` (einzige Akzentfarbe), `--mono` (IBM Plex Mono),
+`--paper #F2EDE4`, `--ink #1C1B19`, `--red #E63321` (einzige Akzentfarbe im Layout),
+`--green #2F6B46` (**nur** Statusfarbe der Formularprüfung, nie dekorativ), `--mono` (IBM Plex Mono),
 `--display` (Archivo), `--gutter` (Seitenränder). Rot sparsam einsetzen.
 
 ## Konventionen
@@ -80,7 +83,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=28` (V28 / `v=28`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=29` (V29 / `v=29`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -118,6 +121,32 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   setzt den Embed zurück, falls die API nicht erreichbar ist (Blocker/Netz weg).
 - **Formular-Honeypot** (`setupForm`): verstecktes, leer erwartetes Feld gegen Spam-Bots. Der
   Web3Forms-`access_key` ist ein **öffentlicher** Schlüssel und darf im Client-HTML stehen.
+- **E-Mail-Live-Prüfung (`setupEmailCheck`) — Timing ist der Kern:** Regel „**Lob sofort, Kritik erst
+  wenn der Nutzer fertig ist**". Solange das Feld noch nie verlassen wurde (`touched === false`),
+  kann **nur** der grüne Haken erscheinen (350 ms nach dem letzten Tastendruck, sonst flackert es
+  beim Tippen) — nie Rot. Erst ein `blur` mit ungültigem Inhalt schaltet `touched` auf `true`; ab
+  dann läuft die Prüfung ohne Verzögerung bei jedem Tastendruck, damit Rot in dem Moment verschwindet,
+  in dem die Adresse stimmt. Leeres Feld = immer neutral. Bewusst **kein** CSS `:invalid`, sonst
+  leuchtet das leere Feld schon beim Laden rot.
+- **Warum eigene Regex statt `input.validity`:** `type="email"` lässt `oskar@a` durch (keine
+  Endung gefordert). `EMAIL_PATTERN` verlangt zusätzlich einen Punkt und ≥ 2 Buchstaben TLD.
+  Die native Prüfung bleibt trotzdem aktiv (`required`/`type`), sie läuft **vor** dem
+  `submit`-Event — deshalb muss `setupForm()` den Leer-Fall nicht selbst abfangen.
+- **Tippfehler-Vorschlag (`suggestDomain`)** vergleicht Domain-Name und TLD **getrennt** per
+  Levenshtein statt die ganze Domain: Name gleich → TLD-Abstand 1 (`gmail.co` → `gmail.com`),
+  TLD gleich → Namensabstand ≤ 2, bei kurzen Namen (≤ 4 Zeichen) nur 1. Der Kurz-Namen-Sonderfall
+  verhindert Fehlalarme wie `orf.at` → `aon.at` (Abstand 2); die Trennung verhindert `web.at` →
+  `web.de`. Nur MX-freie Heuristik — **ob die Adresse existiert, kann die Seite nicht wissen**
+  (ein DNS/MX-Lookup wäre ein externer Request beim Tippen → DSGVO-Bruch). Blockiert nie das
+  Absenden, der Haken bleibt grün.
+- **Statusfarbe Grün:** bricht bewusst die „Rot ist die einzige Akzentfarbe"-Regel — „grün = passt"
+  ist die Konvention, die jeder sofort liest. `#2F6B46` ist gedeckt und mit 5,4:1 auf dem Papierton
+  AA-konform (derselbe Ton wie der frühere Zeichenzähler aus V26).
+- **Icon wird in JS injiziert** (`CHECK_ICON` per `insertAdjacentHTML`), nicht ins HTML geschrieben:
+  Ohne JS gäbe es sonst ein totes Icon im Formular. Ein SVG, zwei Zustände — `.check-mark` bzw.
+  `.check-bang`/`.check-dot` werden per `display` getauscht, der Haken zeichnet sich über
+  `stroke-dasharray`/`stroke-dashoffset` in 260 ms selbst (reines CSS, **kein anime.js nötig** →
+  funktioniert auch bei CDN-Ausfall; bei `prefers-reduced-motion` steht er sofort da).
 - **Szenen-Titel-Reveal** nutzt anime.js `sync: "play"`: einmal ausgelöst, läuft die Animation
   immer zu Ende, auch bei schnellem Weiterscrollen.
 - **`.hero-frame video`:** `height: auto` überschreibt den `width`/`height`-Attribut-Hint am
@@ -137,14 +166,18 @@ Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Fo
 nur die sichtbare Seite).
 
 ### Aktueller Stand (Stand 2026-07-25)
-- **Live-Version:** V27 ist live; **V28** (`v=28`, dieser Stand) nimmt das Zeichenlimit im
-  Kontaktformular **wieder ganz raus**. (Ablauf: … → V25 = wärmerer Papierton → V26 = Journey raus
-  + Zeichenzähler → V27 = Zähler erst ab 200 → V28 = Limit + Zähler entfernt.)
+- **Live-Version:** V28 ist live; **V29** (`v=29`, dieser Stand) bringt die Live-Prüfung des
+  E-Mail-Feldes. (Ablauf: … → V25 = wärmerer Papierton → V26 = Journey raus + Zeichenzähler →
+  V27 = Zähler erst ab 200 → V28 = Limit + Zähler entfernt → V29 = E-Mail-Live-Prüfung.)
 - **Szenen-Nummerierung aktuell:** 01 Hero, 02 Projekte, 03 Fotografie, 04 About, **05 Kontakt**
   (Kontakt war vorher 06). Bei Wiedereinbau der Journey wandert Kontakt zurück auf 06.
 - **Kontaktformular:** Nachrichtenfeld **ohne Zeichenlimit und ohne Zähler** (seit V28, Betreiber-
   wunsch). Kurz gab es beides (V26/V27) — falls es je zurück soll, steht der komplette Stand in
   PR #28 + #29 bzw. in den Historie-Einträgen zu V26/V27.
+  **E-Mail-Feld mit Live-Prüfung (seit V29):** grüner Haken im Feld sobald die Adresse gültig ist,
+  roter Hinweis mit Grund erst nach Verlassen des Feldes, Tippfehler-Vorschlag bei bekannten
+  Domains (`gmial.com` → `gmail.com`, anklickbar). Name und Nachricht bleiben ungeprüft — dort gibt
+  es nichts zu prüfen (Betreiber-Entscheidung). Details unter „Code-Notizen".
 - **Papierton `--paper: #F2EDE4`:** Betreiberwunsch „Richtung gelbliche Oka-Töne". Exakte Mitte
   zwischen dem alten `#E8E6E1` und der gewünschten Zielfarbe `#FBF3E7` (kanalweiser Mittelwert:
   232/251→242, 230/243→237, 225/231→228). Mitgezogen: `<meta name="theme-color">` und die helle
@@ -223,6 +256,26 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-07-25 — Live-Prüfung im E-Mail-Feld (V29):** Betreiberwunsch: Der Nutzer soll nicht erst
+  beim Absenden merken, dass die Adresse nicht stimmt — „schöner grüner Haken im Kreis". Umgesetzt
+  als `setupEmailCheck()` in `main.js` (+ Helfer `editDistance`, `suggestDomain`, `emailProblem`).
+  **HTML:** Das E-Mail-Feld ist jetzt `.field--email`, der Input steckt in `.field-input`
+  (Positionierungs-Anker fürs Icon) und wird von `<p class="field-hint" id="email-hint"
+  role="status" aria-live="polite">` begleitet, verknüpft per `aria-describedby`.
+  **Verhalten:** Lob sofort, Kritik erst nach `blur` (Timing-Regel s. „Code-Notizen"), eigene
+  strengere Regex statt `input.validity`, Tippfehler-Vorschlag gegen 16 gängige AT/DE-Provider mit
+  getrenntem Name/TLD-Vergleich. `setupForm()` bricht das Absenden bei ungültiger Adresse ab
+  (Statuszeile „PRÜFEN / Bitte die E-Mail-Adresse korrigieren.", Fokus zurück ins Feld), der
+  `reset`-Listener räumt den Zustand nach erfolgreichem Versand wieder auf.
+  **CSS:** neues Token `--green: #2F6B46`, `.field-check` (SVG absolut rechts im Feld, Haken
+  zeichnet sich in 260 ms selbst), `.field-hint`, `.hint-fix`; `prefers-reduced-motion` überspringt
+  die Zeichen-Animation. Ohne JS unverändert nutzbar (kein Icon im DOM, `required`/`type="email"`
+  bleiben). Lokal per Playwright mit 36 Prüfungen abgesichert: Tippen ohne blur zeigt kein Rot,
+  blur meldet den konkreten Grund, Korrektur schaltet live auf Grün, `oskar@b` wird abgelehnt
+  (native Prüfung ließe es durch), Vorschlag-Klick setzt die Adresse ein, keine Fehlalarme bei
+  `orf.at`/`web.at`/`sub.domain.co.uk`, Absende-Sperre + Fokus, Reset, Ohne-JS-Fall.
+  Version 28→29 (Cache-Buster + Footer-Marker in allen drei HTML-Dateien).
+  Branch `claude/email-field-live-validation-89a0b4`.
 - **2026-07-25 — Zeichenlimit im Kontaktformular wieder entfernt (V28):** Betreiberwunsch „mach das
   Limit doch weg" → `maxlength="300"` am `<textarea>`, der Zähler-Absatz, `aria-describedby`,
   `setupCharCount()` in `main.js`, die CSS-Regeln `.char-count*` **und** die nur dafür angelegten
