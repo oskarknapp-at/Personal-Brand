@@ -27,7 +27,8 @@ Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS
   Verlauf), niemals in den Quelltext. Betrifft auch TODOs und Platzhalter-Hinweise → als „Offene
   Punkte" hier führen, nicht als Kommentar im Code.
 - **⚠️ VERSION — BEI JEDEM DEPLOY PFLICHT (EINE Zahl `N`, überall gleich):** Bei **jeder**
-  Änderung, die live geht, `N` um 1 erhöhen und **in allen drei** HTML-Dateien
+  Änderung, die live geht, `N` um **0.1** erhöhen (Schema seit 2026-07-25: `3.0` → `3.1` → … →
+  `3.9` → `4.0`) und **in allen drei** HTML-Dateien
   (`index.html`, `impressum/index.html`, `datenschutz/index.html`) an **beiden** Stellen setzen:
   1. **Cache-Buster** `style.css?v=N` / `main.js?v=N` (zwingt Browser, neue Dateien zu laden).
   2. **Sichtbare Footer-Version** `<span>SCHNITT: ENDE / VN</span>` — dient dem Betreiber als
@@ -78,12 +79,14 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
 
 ## Konventionen
 - **Version `N` (JEDES MAL beim Deploy!):** Es gibt **eine** Versionszahl, die an drei Stellen pro
-  HTML-Datei steht und **immer identisch** ist:
+  HTML-Datei steht und **immer identisch** ist. **Schema seit 2026-07-25 (Betreiber-Vorgabe):
+  Schritte von 0.1** — die alte ganzzahlige V29 wurde als **V2.9** gelesen, danach `3.0`, `3.1`,
+  `3.2` usw.; nach `3.9` kommt `4.0`. Der Cache-Buster trägt dieselbe Zahl (`?v=3.0`).
   - Cache-Buster: `style.css?v=N`, `main.js?v=N` (im `<head>`).
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=29` (V29 / `v=29`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.0` (V3.0 / `v=3.0`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -139,6 +142,11 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   `web.de`. Nur MX-freie Heuristik — **ob die Adresse existiert, kann die Seite nicht wissen**
   (ein DNS/MX-Lookup wäre ein externer Request beim Tippen → DSGVO-Bruch). Blockiert nie das
   Absenden, der Haken bleibt grün.
+- **Zwei Textsorten im Formular, bewusst unterschiedlich (seit V3.0):** Die Hinweise **unter dem
+  Feld** (`emailProblem()`) sind schlichte Sätze **ohne Slug-Präfix** („Das @-Zeichen fehlt.") —
+  das frühere „FEHLT / …" klang wie eine Fehlermeldung aus dem Maschinenraum. Die Zeile
+  `.form-status` **unter dem Button** behält das Präfix (`GESENDET / …`, `FEHLER / …`,
+  `PRÜFEN / …`), weil sie zur Drehbuch-Typo der Seite gehört und dort schon immer so aussah.
 - **Statusfarbe Grün:** bricht bewusst die „Rot ist die einzige Akzentfarbe"-Regel — „grün = passt"
   ist die Konvention, die jeder sofort liest. `#2F6B46` ist gedeckt und mit 5,4:1 auf dem Papierton
   AA-konform (derselbe Ton wie der frühere Zeichenzähler aus V26).
@@ -166,9 +174,11 @@ Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Fo
 nur die sichtbare Seite).
 
 ### Aktueller Stand (Stand 2026-07-25)
-- **Live-Version:** V28 ist live; **V29** (`v=29`, dieser Stand) bringt die Live-Prüfung des
-  E-Mail-Feldes. (Ablauf: … → V25 = wärmerer Papierton → V26 = Journey raus + Zeichenzähler →
-  V27 = Zähler erst ab 200 → V28 = Limit + Zähler entfernt → V29 = E-Mail-Live-Prüfung.)
+- **Live-Version:** V29 (= V2.9) ist live; **V3.0** (`v=3.0`, dieser Stand) schärft die Texte der
+  E-Mail-Prüfung und sichert das Nachrichtenfeld ab. **Neues Versionsschema ab hier: Schritte von
+  0.1** (V2.9 → V3.0 → V3.1 …), s. „Konventionen". (Ablauf: … → V26 = Journey raus + Zeichenzähler
+  → V27 = Zähler erst ab 200 → V28 = Limit + Zähler entfernt → V2.9 = E-Mail-Live-Prüfung →
+  V3.0 = Texte + Pflichtfeld Nachricht.)
 - **Szenen-Nummerierung aktuell:** 01 Hero, 02 Projekte, 03 Fotografie, 04 About, **05 Kontakt**
   (Kontakt war vorher 06). Bei Wiedereinbau der Journey wandert Kontakt zurück auf 06.
 - **Kontaktformular:** Nachrichtenfeld **ohne Zeichenlimit und ohne Zähler** (seit V28, Betreiber-
@@ -176,8 +186,10 @@ nur die sichtbare Seite).
   PR #28 + #29 bzw. in den Historie-Einträgen zu V26/V27.
   **E-Mail-Feld mit Live-Prüfung (seit V29):** grüner Haken im Feld sobald die Adresse gültig ist,
   roter Hinweis mit Grund erst nach Verlassen des Feldes, Tippfehler-Vorschlag bei bekannten
-  Domains (`gmial.com` → `gmail.com`, anklickbar). Name und Nachricht bleiben ungeprüft — dort gibt
-  es nichts zu prüfen (Betreiber-Entscheidung). Details unter „Code-Notizen".
+  Domains (`gmial.com` → `gmail.com`, anklickbar). Name und Nachricht bekommen **keine** Live-
+  Prüfung — dort gibt es inhaltlich nichts zu prüfen (Betreiber-Entscheidung); beide sind aber
+  `required`, und seit V3.0 blockt `setupForm()` zusätzlich eine Nachricht aus reinen Leerzeichen
+  (die rutscht durch die native `required`-Prüfung). Details unter „Code-Notizen".
 - **Papierton `--paper: #F2EDE4`:** Betreiberwunsch „Richtung gelbliche Oka-Töne". Exakte Mitte
   zwischen dem alten `#E8E6E1` und der gewünschten Zielfarbe `#FBF3E7` (kanalweiser Mittelwert:
   232/251→242, 230/243→237, 225/231→228). Mitgezogen: `<meta name="theme-color">` und die helle
@@ -256,7 +268,19 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
-- **2026-07-25 — Live-Prüfung im E-Mail-Feld (V29):** Betreiberwunsch: Der Nutzer soll nicht erst
+- **2026-07-25 — Formulartexte geschärft, Nachricht abgesichert, neues Versionsschema (V3.0):**
+  Drei Betreiberwünsche. **(1) Versionsschema:** ab jetzt Schritte von 0.1 — die bisherige V29 gilt
+  rückwirkend als **V2.9**, dieser Stand ist **V3.0**, danach 3.1, 3.2 … Cache-Buster trägt
+  dieselbe Zahl (`?v=3.0`). **(2) Hinweistexte:** Das Slug-Präfix ist aus den Feldhinweisen raus
+  („FEHLT / Das @-Zeichen fehlt." → „Das @-Zeichen fehlt.", ebenso die „PRÜFEN / "-Präfixe), und
+  der Auffangsatz „Das sieht noch nicht nach einer E-Mail-Adresse aus." ist ersetzt durch
+  **„Bitte eine vollständige E-Mail-Adresse eingeben."** — der alte klang unprofessionell. Die
+  `.form-status`-Zeile unter dem Button behält ihre Präfixe (s. „Code-Notizen"). **(3) Nachricht als
+  Pflichtfeld:** `required` stand schon am `<textarea>`, die native Prüfung lässt aber reine
+  Leerzeichen durch. `setupForm()` prüft jetzt zusätzlich `form.message.value.trim()` und bricht mit
+  „PRÜFEN / Bitte noch eine Nachricht schreiben." ab, Fokus springt ins Feld. Playwright-Lauf auf
+  39 Prüfungen erweitert, alle grün. Branch `claude/email-field-live-validation-89a0b4`.
+- **2026-07-25 — Live-Prüfung im E-Mail-Feld (V29, rückwirkend V2.9):** Betreiberwunsch: Der Nutzer soll nicht erst
   beim Absenden merken, dass die Adresse nicht stimmt — „schöner grüner Haken im Kreis". Umgesetzt
   als `setupEmailCheck()` in `main.js` (+ Helfer `editDistance`, `suggestDomain`, `emailProblem`).
   **HTML:** Das E-Mail-Feld ist jetzt `.field--email`, der Input steckt in `.field-input`
