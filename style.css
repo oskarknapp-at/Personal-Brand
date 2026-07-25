@@ -630,7 +630,14 @@ body.menu-open { overflow: hidden; }
   letter-spacing: 0.12em;
   text-align: right;
   color: var(--green);
-  transition: color 200ms ease;
+  visibility: hidden;
+  opacity: 0;
+  transition: color 200ms ease, opacity 200ms ease;
+}
+
+.char-count[data-visible] {
+  visibility: visible;
+  opacity: 1;
 }
 
 .char-count[data-state="mid"] { color: var(--amber); }

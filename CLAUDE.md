@@ -62,8 +62,8 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
    3b. `setupGallery()` – justiertes Reihen-Layout, Fotos werden nicht beschnitten.
 4. `setupForm()` – Kontaktformular via **Web3Forms** (`fetch` auf `api.web3forms.com/submit`),
    ohne Reload. `access_key` steht als hidden input in `index.html` (öffentlich, kein Secret).
-   4b. `setupCharCount()` – Live-Zeichenzähler für das Nachrichtenfeld (Limit 300, Ampelfarben
-   grün/gelb/rot über `data-state` auf `#message-count`).
+   4b. `setupCharCount()` – Live-Zeichenzähler für das Nachrichtenfeld (Limit 300, sichtbar ab 200
+   Zeichen über `data-visible`, Ampelfarben grün/gelb/rot über `data-state` auf `#message-count`).
 5. `tcToFrames()` / `framesToTc()` – Timecode-Hilfen, 24 fps, Format `HH:MM:SS:FF`.
 6. `initMotion({…anime})` – alle Animationen (Hero-Timeline, Szenentitel, Timecode-Counter,
    generische `[data-animate]`-Reveals per `onScroll`).
@@ -84,7 +84,7 @@ Feste IDs: `#message` + `#message-count` (Zeichenzähler, per `data-state` einge
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=26` (V26 / `v=26`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=27` (V27 / `v=27`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -123,6 +123,11 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
 - **Zeichenzähler** (`setupCharCount`): Das harte Limit steht als `maxlength="300"` im HTML, damit es
   **auch ohne JS** greift (Progressive Enhancement); JS liest den Wert aus dem Attribut, keine zweite
   Zahl im Code. Der Zähler-Absatz steht mit „0 / 300 ZEICHEN" fertig im HTML, JS überschreibt ihn nur.
+  **Sichtbar erst ab 200 Zeichen** (`showFrom`, Betreiberwunsch): JS schaltet `data-visible` um, CSS
+  blendet mit `visibility: hidden; opacity: 0` aus und in 200 ms ein. Bewusst **kein `display: none`**
+  — der Absatz belegt seinen Platz durchgehend, sonst springt beim Erreichen der 200 der Absende-Button
+  nach unten. `visibility: hidden` nimmt ihn zusätzlich aus dem Accessibility-Tree, der Zähler wird
+  also erst vorgelesen, wenn er auch zu sehen ist.
   Schwellen: `< 75 %` grün, `75–92 %` gelb, `≥ 93 %` (ab 279) rot — über `data-state="low|mid|high"`,
   Farben kommen aus dem CSS. Gezählt wird mit `[...value].length` (Code-Points), damit ein Emoji als
   ein Zeichen zählt; `maxlength` selbst zählt UTF-16-Einheiten — winzige Abweichung, bewusst.
@@ -151,14 +156,15 @@ Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Fo
 nur die sichtbare Seite).
 
 ### Aktueller Stand (Stand 2026-07-25)
-- **Live-Version:** V25 ist live (wärmerer Papierton gemergt in `main`); **V26** (`v=26`, dieser
-  Stand) baut die **Journey-Szene aus** (ins Archiv, s. „Ausgeblendete Inhalte" Block 5) und ergänzt
-  den **Zeichenzähler** im Kontaktformular. (Ablauf: … → V23 = Portrait v2 → V24 = About-Text →
-  V25 = wärmerer Papierton → V26 = Journey raus + Zeichenzähler.)
+- **Live-Version:** V26 ist live (Journey ausgebaut + Zeichenzähler, gemergt in `main`); **V27**
+  (`v=27`, dieser Stand) blendet den Zeichenzähler erst **ab 200 Zeichen** ein. (Ablauf: … →
+  V24 = About-Text → V25 = wärmerer Papierton → V26 = Journey raus + Zeichenzähler →
+  V27 = Zähler erst ab 200.)
 - **Szenen-Nummerierung aktuell:** 01 Hero, 02 Projekte, 03 Fotografie, 04 About, **05 Kontakt**
   (Kontakt war vorher 06). Bei Wiedereinbau der Journey wandert Kontakt zurück auf 06.
 - **Kontaktformular:** Nachrichtenfeld hat ein Limit von **300 Zeichen** (`maxlength`) mit
-  Live-Zähler „N / 300 ZEICHEN" unter dem Feld, Farbe grün → gelb (ab 225) → rot (ab 279).
+  Live-Zähler „N / 300 ZEICHEN" unter dem Feld. **Erscheint erst ab 200 Zeichen** (V27), Farbe
+  grün → gelb (ab 225) → rot (ab 279).
 - **Papierton `--paper: #F2EDE4`:** Betreiberwunsch „Richtung gelbliche Oka-Töne". Exakte Mitte
   zwischen dem alten `#E8E6E1` und der gewünschten Zielfarbe `#FBF3E7` (kanalweiser Mittelwert:
   232/251→242, 230/243→237, 225/231→228). Mitgezogen: `<meta name="theme-color">` und die helle
@@ -237,6 +243,17 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-07-25 — Zeichenzähler erst ab 200 Zeichen (V27):** Betreiberwunsch: Der Zähler soll nicht
+  dauerhaft dastehen, sondern erst auftauchen, wenn es Richtung Limit geht. `setupCharCount()` setzt
+  jetzt zusätzlich `data-visible` auf `#message-count`, sobald ≥ 200 Zeichen getippt sind
+  (Konstante `showFrom` in `main.js`); CSS blendet den Absatz mit `visibility: hidden; opacity: 0`
+  aus und in 200 ms ein. **Kein `display: none`**, damit der Platz reserviert bleibt und der
+  Absende-Button beim Erscheinen nicht springt; `visibility: hidden` hält den Zähler solange auch
+  aus dem Accessibility-Tree. Ampel-Schwellen (225 gelb / 279 rot) und `maxlength="300"`
+  unverändert, der Reset nach dem Versand blendet ihn wieder aus. Lokal per Playwright geprüft
+  (unsichtbar bei 0/199, sichtbar ab 200, Farbwechsel bei 225/279, Reset blendet aus).
+  Version 26→27 (Cache-Buster + Footer-Marker in allen drei HTML-Dateien).
+  Branch `claude/journey-contact-char-counter-8qmrwt`.
 - **2026-07-25 — Journey ausgebaut + Zeichenzähler im Kontaktformular (V26):** Der Betreiber hatte
   die Journey-Szene direkt auf `main` mit `<!-- … -->` auskommentiert. Auskommentierter Code
   verstößt gegen die harte Regel „kein Kommentar im ausgelieferten Code" (und wird trotzdem
