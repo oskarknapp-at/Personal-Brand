@@ -86,7 +86,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.0` (V3.0 / `v=3.0`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.1` (V3.1 / `v=3.1`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -155,6 +155,16 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   `.check-bang`/`.check-dot` werden per `display` getauscht, der Haken zeichnet sich über
   `stroke-dasharray`/`stroke-dashoffset` in 260 ms selbst (reines CSS, **kein anime.js nötig** →
   funktioniert auch bei CDN-Ausfall; bei `prefers-reduced-motion` steht er sofort da).
+- **Szenenkopf bleibt auf dem Handy einzeilig (seit V3.1):** Slug und Timecode dürfen nie
+  untereinander rutschen. Deshalb im `≤800px`-Block `flex-wrap: nowrap` + `white-space: nowrap` und
+  eine **rechnende** Schriftgröße:
+  `clamp(0.52rem, calc((100vw - 2 * var(--gutter) - 1.6rem) / 33), 0.72rem)`.
+  Der Teiler **33** ist gemessen, nicht geschätzt: IBM Plex Mono rendert hier **0,691 em pro
+  Zeichen** (Vorschub + `letter-spacing: 0.04em`), der längste Kopf („SZENE 01 / EXT. MOSTVIERTEL /
+  TAG" + „TC 00:00:00:00" = 47 Zeichen) braucht damit ~32,5 em; `1.6rem` deckt Mindestabstand plus
+  Reserve. **Wird ein Slug länger als 33 Zeichen, muss der Teiler mitwachsen** — sonst läuft die
+  Zeile über. Ab ~430 px Viewport greift die Obergrenze, dort steht wieder die Desktop-Größe
+  0.72 rem; die Untergrenze 0.52 rem wirkt erst unter ~330 px (iPhone SE 1. Gen).
 - **Szenen-Titel-Reveal** nutzt anime.js `sync: "play"`: einmal ausgelöst, läuft die Animation
   immer zu Ende, auch bei schnellem Weiterscrollen.
 - **`.hero-frame video`:** `height: auto` überschreibt den `width`/`height`-Attribut-Hint am
@@ -173,12 +183,14 @@ Erledigtes aus „Offene Punkte" streichen, neuen Eintrag in „Historie" (oben 
 Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Footer-Marker betrifft
 nur die sichtbare Seite).
 
-### Aktueller Stand (Stand 2026-07-25)
-- **Live-Version:** V29 (= V2.9) ist live; **V3.0** (`v=3.0`, dieser Stand) schärft die Texte der
-  E-Mail-Prüfung und sichert das Nachrichtenfeld ab. **Neues Versionsschema ab hier: Schritte von
-  0.1** (V2.9 → V3.0 → V3.1 …), s. „Konventionen". (Ablauf: … → V26 = Journey raus + Zeichenzähler
-  → V27 = Zähler erst ab 200 → V28 = Limit + Zähler entfernt → V2.9 = E-Mail-Live-Prüfung →
-  V3.0 = Texte + Pflichtfeld Nachricht.)
+### Aktueller Stand (Stand 2026-07-26)
+- **Live-Version:** V3.0 ist live; **V3.1** (`v=3.1`, dieser Stand) hält den Szenenkopf auf dem
+  Handy einzeilig. **Versionsschema seit V3.0: Schritte von 0.1** (V2.9 → V3.0 → V3.1 …), s.
+  „Konventionen". (Ablauf: … → V28 = Limit + Zähler entfernt → V2.9 = E-Mail-Live-Prüfung →
+  V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig.)
+- **Szenenköpfe:** Slug und Timecode stehen auf **jeder** Breite in einer Zeile (Betreiberwunsch,
+  V3.1). Szene 04 heißt dafür „INT. SCHNITT" statt „INT. SCHNITTPLATZ". Die Schriftgröße rechnet
+  sich aus der Viewportbreite, Details unter „Code-Notizen".
 - **Szenen-Nummerierung aktuell:** 01 Hero, 02 Projekte, 03 Fotografie, 04 About, **05 Kontakt**
   (Kontakt war vorher 06). Bei Wiedereinbau der Journey wandert Kontakt zurück auf 06.
 - **Kontaktformular:** Nachrichtenfeld **ohne Zeichenlimit und ohne Zähler** (seit V28, Betreiber-
@@ -249,6 +261,12 @@ nur die sichtbare Seite).
   Links alle auf `https://okmedia.at/` mit Trailing-Slash); die Search-Console-Meldung betrifft die
   DNS-Ebene bzw. den normalen, erwarteten Redirect nicht-kanonischer Varianten (www→apex, http→https,
   github.io→okmedia.at) und ist meist rein informativ.
+- **Horizontaler Überlauf bei genau 320 px (klein, kosmetisch):** Bei 320 px Viewport ist
+  `document.scrollWidth` 343 px, die Seite lässt sich also ~23 px seitlich schieben. Ursache ist der
+  Hero-Schriftzug `.hero-name` (`font-stretch: 125%` macht die Glyphen breiter, als die
+  `clamp()`-Größe einkalkuliert). Betrifft nur sehr alte Geräte (iPhone SE 1. Gen); ab 360 px ist
+  nichts zu sehen. Fix wäre eine leicht kleinere Untergrenze im `clamp()` von `.hero-name`.
+  Bestand schon vor V3.1 (nachgeprüft), hat mit dem Szenenkopf nichts zu tun.
 - **Backlog:** optional AAAA-/IPv6-Records; Journey-Serie zu echtem Content-Hub ausbauen
   (pro Folge Seite/Anchor + VideoObject + Textzusammenfassung).
 
@@ -268,6 +286,21 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-07-26 — Szenenkopf auf dem Handy einzeilig (V3.1):** Betreiberwunsch: Slug („SZENE 01 /
+  EXT. MOSTVIERTEL / TAG") und Timecode sollen nie untereinander rutschen, notfalls über kürzere
+  Orte oder kleinere Schrift — „aber nicht zu klein". Umgesetzt im `≤800px`-Block: `flex-wrap:
+  nowrap`, `.slug { white-space: nowrap }`, `letter-spacing` 0.1em → 0.04em und eine aus der
+  Viewportbreite **gerechnete** Schriftgröße (Formel + gemessener Teiler s. „Code-Notizen").
+  Zusätzlich Szene 04 gekürzt: „INT. SCHNITTPLATZ" → **„INT. SCHNITT"** (36 → 31 Zeichen); Szene 01
+  behält „MOSTVIERTEL" (Marke) und ist mit 33 Zeichen jetzt der längste Kopf, auf den die Formel
+  ausgelegt ist. **Wichtig:** Der erste Anlauf rechnete mit 0,66 em pro Zeichen (Vorschub 0,6 +
+  Spacing) und lief über — real sind es **0,691 em**; der Wert ist im Browser gemessen, nicht
+  hergeleitet. Ergebnis (Playwright, 12 Breiten von 320 bis 1280 px, alle fünf Szenenköpfe):
+  überall einzeilig, ab 430 px volle Desktop-Größe 0.72 rem, bei 390 px 0.63 rem, bei 320 px
+  0.52 rem. Nebenbefund, **nicht** von dieser Änderung verursacht und **offen**: Bei genau 320 px
+  scrollt die Seite ~23 px horizontal, Ursache ist der Hero-Schriftzug (`.hero-name`,
+  `font-stretch: 125%`), s. „Offene Punkte". Version 3.0 → 3.1.
+  Branch `claude/email-field-live-validation-89a0b4`.
 - **2026-07-25 — Formulartexte geschärft, Nachricht abgesichert, neues Versionsschema (V3.0):**
   Drei Betreiberwünsche. **(1) Versionsschema:** ab jetzt Schritte von 0.1 — die bisherige V29 gilt
   rückwirkend als **V2.9**, dieser Stand ist **V3.0**, danach 3.1, 3.2 … Cache-Buster trägt
