@@ -73,7 +73,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
 `data-age`, `data-split` (Text→Buchstaben), `data-tc` (Timecode), `data-yt` (YouTube-ID), `data-animate` (Scroll-Reveal).
 
 ## Design-Tokens (`:root` in style.css)
-`--paper #F2EDE4`, `--ink #1C1B19`, `--red #E63321` (einzige Akzentfarbe im Layout),
+`--paper #FAF7F1`, `--ink #1C1B19`, `--red #E63321` (einzige Akzentfarbe im Layout),
 `--green #2F6B46` (**nur** Statusfarbe der Formularprüfung, nie dekorativ), `--mono` (IBM Plex Mono),
 `--display` (Archivo), `--gutter` (Seitenränder). Rot sparsam einsetzen.
 
@@ -86,7 +86,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.1` (V3.1 / `v=3.1`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.2` (V3.2 / `v=3.2`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -148,7 +148,7 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   `.form-status` **unter dem Button** behält das Präfix (`GESENDET / …`, `FEHLER / …`,
   `PRÜFEN / …`), weil sie zur Drehbuch-Typo der Seite gehört und dort schon immer so aussah.
 - **Statusfarbe Grün:** bricht bewusst die „Rot ist die einzige Akzentfarbe"-Regel — „grün = passt"
-  ist die Konvention, die jeder sofort liest. `#2F6B46` ist gedeckt und mit 5,4:1 auf dem Papierton
+  ist die Konvention, die jeder sofort liest. `#2F6B46` ist gedeckt und mit 5,9:1 auf dem Papierton
   AA-konform (derselbe Ton wie der frühere Zeichenzähler aus V26).
 - **Icon wird in JS injiziert** (`CHECK_ICON` per `insertAdjacentHTML`), nicht ins HTML geschrieben:
   Ohne JS gäbe es sonst ein totes Icon im Formular. Ein SVG, zwei Zustände — `.check-mark` bzw.
@@ -184,10 +184,11 @@ Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Fo
 nur die sichtbare Seite).
 
 ### Aktueller Stand (Stand 2026-07-26)
-- **Live-Version:** V3.0 ist live; **V3.1** (`v=3.1`, dieser Stand) hält den Szenenkopf auf dem
-  Handy einzeilig. **Versionsschema seit V3.0: Schritte von 0.1** (V2.9 → V3.0 → V3.1 …), s.
-  „Konventionen". (Ablauf: … → V28 = Limit + Zähler entfernt → V2.9 = E-Mail-Live-Prüfung →
-  V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig.)
+- **Live-Version:** V3.1 ist live; **V3.2** (`v=3.2`, dieser Stand) hebt den Papierton auf
+  „fast weiß, ein bisschen beige". **Versionsschema seit V3.0: Schritte von 0.1** (V2.9 → V3.0 →
+  V3.1 …), s. „Konventionen". (Ablauf: … → V28 = Limit + Zähler entfernt → V2.9 =
+  E-Mail-Live-Prüfung → V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig →
+  V3.2 = Papierton fast weiß.)
 - **Szenenköpfe:** Slug und Timecode stehen auf **jeder** Breite in einer Zeile (Betreiberwunsch,
   V3.1). Szene 04 heißt dafür „INT. SCHNITT" statt „INT. SCHNITTPLATZ". Die Schriftgröße rechnet
   sich aus der Viewportbreite, Details unter „Code-Notizen".
@@ -202,15 +203,17 @@ nur die sichtbare Seite).
   Prüfung — dort gibt es inhaltlich nichts zu prüfen (Betreiber-Entscheidung); beide sind aber
   `required`, und seit V3.0 blockt `setupForm()` zusätzlich eine Nachricht aus reinen Leerzeichen
   (die rutscht durch die native `required`-Prüfung). Details unter „Code-Notizen".
-- **Papierton `--paper: #F2EDE4`:** Betreiberwunsch „Richtung gelbliche Oka-Töne". Exakte Mitte
-  zwischen dem alten `#E8E6E1` und der gewünschten Zielfarbe `#FBF3E7` (kanalweiser Mittelwert:
-  232/251→242, 230/243→237, 225/231→228). Mitgezogen: `<meta name="theme-color">` und die helle
-  Textfarbe im Favicon-Data-URI in allen drei HTML-Dateien. Die dunklen Töne (`#181714`, `#23211E`)
-  bleiben unverändert, ebenso `placehold.co`-URLs (Platzhalter, verschwinden ohnehin).
+- **Papierton `--paper: #FAF7F1` (seit V3.2):** Betreiberwunsch „fast weiß, bisschen beige noch".
+  Ungefähr die Mitte zwischen dem vorigen `#F2EDE4` und Weiß, der warme Stich bleibt erhalten
+  (R250 G247 B241 — ~9 Punkte Spanne zwischen Rot- und Blaukanal, vorher 14). Vorgeschichte:
+  `#E8E6E1` → `#F2EDE4` (V25, „Richtung gelbliche Oka-Töne") → `#FAF7F1` (V3.2). Mitgezogen:
+  `<meta name="theme-color">` und die helle Textfarbe im Favicon-Data-URI in allen drei
+  HTML-Dateien. Die dunklen Töne (`#181714`, `#23211E`) bleiben unverändert, ebenso
+  `placehold.co`-URLs (Platzhalter, verschwinden ohnehin).
 - **Lighthouse (23.07.26, Moto G Power / Slow 4G):** Performance 94, Accessibility 92,
   Best Practices 100, SEO 100, Agentic Browsing 2/3 → **nach V20-ARIA-Fix 3/3 erwartet**.
-  Bewusst offen gelassen: **Kontrast** (Signalrot `#E63321` auf Papier — mit dem hellerem V25-Papier
-  3,71:1 statt vorher 3,46:1, weiterhin unter AA 4,5:1 für kleinen Text bei
+  Bewusst offen gelassen: **Kontrast** (Signalrot `#E63321` auf Papier — mit dem hellen V3.2-Papier
+  4,04:1 statt 3,71:1 (V25) bzw. 3,46:1 (davor), weiterhin knapp unter AA 4,5:1 für kleinen Text bei
   `.tc`/`.scroll-hint`/`.journey-cta`) — Betreiber will das helle Brand-Rot
   behalten, Accessibility bleibt daher bei 92. **Performance-Hebel liegen beim Betreiber:**
   Hero-`show_reel.mp4` ist 3,8 MB (LCP-Element, LCP 3,1 s) → Kompression + `poster`-Still nötig
@@ -286,6 +289,17 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-08-20 — Papierton fast weiß (V3.2):** Betreiberwunsch „ändere die Hintergrundfarbe auf fast
+  weiß, bisschen beige noch". `--paper` in `style.css` von `#F2EDE4` auf **`#FAF7F1`** gesetzt —
+  rund die Mitte zwischen bisherigem Ton und Weiß, der warme Stich bleibt (Kanalspanne 9 statt 14).
+  Da der Token überall per `var(--paper)` genutzt wird, reichte die eine Zeile fürs Styling;
+  zusätzlich in allen drei HTML-Dateien nachgezogen: `<meta name="theme-color">` und die helle
+  „OK"-Textfarbe im Favicon-Data-URI. Unverändert: dunkle Töne (`#181714`, `#23211E`) und die
+  `placehold.co`-Platzhalter. Kontraste steigen alle leicht: Ink/Papier ~16,2:1, Grün/Papier 5,9:1
+  (bleibt AA), Rot/Papier 3,71:1 → **4,04:1** (bewusst weiter knapp unter AA, s. „Aktueller Stand").
+  Lokal per Playwright auf allen drei Seiten geprüft (`body` berechnet `rgb(250, 247, 241)`,
+  `theme-color` gleich mitgezogen) plus Screenshot. Version 3.1 → 3.2 (Cache-Buster +
+  Footer-Marker in allen drei HTML-Dateien). Branch `claude/background-color-beige-white-ncqf06`.
 - **2026-07-26 — Szenenkopf auf dem Handy einzeilig (V3.1):** Betreiberwunsch: Slug („SZENE 01 /
   EXT. MOSTVIERTEL / TAG") und Timecode sollen nie untereinander rutschen, notfalls über kürzere
   Orte oder kleinere Schrift — „aber nicht zu klein". Umgesetzt im `≤800px`-Block: `flex-wrap:
