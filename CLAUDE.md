@@ -86,7 +86,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.2` (V3.2 / `v=3.2`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.3` (V3.3 / `v=3.3`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -122,6 +122,16 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   starten direkt mit Ton. **Safari blockiert nachgeladenes Autoplay grundsätzlich** → dort zeigt der
   Player seinen eigenen Play-Button, erst der Klick darauf startet mit Ton. Kein Bug. 10-s-Timeout
   setzt den Embed zurück, falls die API nicht erreichbar ist (Blocker/Netz weg).
+- **Untertitel bleiben aus (seit V3.3), zwei Stufen:** `playerVars.cc_load_policy: 0` **und** im
+  `onReady` `unloadModule("captions")` + `unloadModule("cc")` vor `playVideo()`. Beides ist nötig:
+  `cc_load_policy: 0` ist von YouTube **nicht dokumentiert** (offiziell existiert nur `1` = CC
+  erzwingen) und wird nicht in jedem Fall respektiert, `unloadModule` wirkt dagegen zuverlässig,
+  greift aber erst nach dem Laden. Ohne beides entscheidet YouTubes Default „Nutzerpräferenz" —
+  Auslöser sind Browser-/OS-Bedienungshilfen („Untertitel bevorzugen"), eine früher im Player
+  gesetzte CC-Präferenz (auch `youtube-nocookie.com` legt `yt-player-*` im localStorage ab) oder
+  automatische Untertitel. Deshalb sah man es nur auf manchen Geräten. Der CC-Button im Player
+  bleibt nutzbar, Untertitel sind nur nicht mehr **vorab** an. `unloadModule` ist per `typeof`
+  abgesichert, falls die API-Version die Methode nicht kennt.
 - **Formular-Honeypot** (`setupForm`): verstecktes, leer erwartetes Feld gegen Spam-Bots. Der
   Web3Forms-`access_key` ist ein **öffentlicher** Schlüssel und darf im Client-HTML stehen.
 - **E-Mail-Live-Prüfung (`setupEmailCheck`) — Timing ist der Kern:** Regel „**Lob sofort, Kritik erst
@@ -183,12 +193,15 @@ Erledigtes aus „Offene Punkte" streichen, neuen Eintrag in „Historie" (oben 
 Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Footer-Marker betrifft
 nur die sichtbare Seite).
 
-### Aktueller Stand (Stand 2026-07-26)
-- **Live-Version:** V3.1 ist live; **V3.2** (`v=3.2`, dieser Stand) hebt den Papierton auf
-  „fast weiß, ein bisschen beige". **Versionsschema seit V3.0: Schritte von 0.1** (V2.9 → V3.0 →
+### Aktueller Stand (Stand 2026-09-02)
+- **Live-Version:** V3.2 ist live; **V3.3** (`v=3.3`, dieser Stand) schaltet die YouTube-Untertitel
+  im Embed standardmäßig aus. **Versionsschema seit V3.0: Schritte von 0.1** (V2.9 → V3.0 →
   V3.1 …), s. „Konventionen". (Ablauf: … → V28 = Limit + Zähler entfernt → V2.9 =
   E-Mail-Live-Prüfung → V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig →
-  V3.2 = Papierton fast weiß.)
+  V3.2 = Papierton fast weiß → V3.3 = Untertitel aus.)
+- **YouTube-Embeds:** Klick-zu-Laden über `youtube-nocookie.com`, Autoplay nach dem Klick,
+  **Untertitel standardmäßig aus** (seit V3.3, Details unter „Code-Notizen"). Der CC-Button im
+  Player bleibt bedienbar.
 - **Szenenköpfe:** Slug und Timecode stehen auf **jeder** Breite in einer Zeile (Betreiberwunsch,
   V3.1). Szene 04 heißt dafür „INT. SCHNITT" statt „INT. SCHNITTPLATZ". Die Schriftgröße rechnet
   sich aus der Viewportbreite, Details unter „Code-Notizen".
@@ -289,6 +302,20 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-09-02 — YouTube-Untertitel standardmäßig aus (V3.3):** Betreiberfrage „warum ist bei yt
+  projekte untertitel aktiviert" → Ursache lag **nicht** im Code: `setupEmbeds()` setzte gar keine
+  Untertitel-Option, also entschied YouTubes Default „Nutzerpräferenz" (Browser-/OS-Bedienungshilfe
+  „Untertitel bevorzugen", eine früher im Player gesetzte CC-Präferenz aus dem localStorage von
+  `youtube-nocookie.com`, oder automatische Untertitel) — deshalb war es geräteabhängig. Fix in
+  `main.js`/`setupEmbeds()` zweistufig: `playerVars.cc_load_policy: 0` plus `unloadModule("captions")`
+  und `unloadModule("cc")` im `onReady`, vor `playVideo()`, per `typeof` abgesichert. Warum beides
+  nötig ist, steht unter „Code-Notizen". Der CC-Button im Player bleibt nutzbar, Untertitel sind nur
+  nicht mehr vorab an. Lokal per Playwright geprüft (YouTube-IFrame-API mit `page.route` gemockt,
+  da youtube.com in der Sandbox gesperrt ist): `playerVars` kommen als
+  `{autoplay:1, playsinline:1, rel:0, cc_load_policy:0}` an, `unloadModule` wird mit `captions` und
+  `cc` aufgerufen, danach läuft `playVideo()` — Ladezustand und Aufräumen unverändert.
+  `node --check main.js` grün. Version 3.2 → 3.3 (Cache-Buster + Footer-Marker in allen drei
+  HTML-Dateien). Branch `claude/youtube-projekte-untertitel-qa97yi`.
 - **2026-08-20 — Papierton fast weiß (V3.2):** Betreiberwunsch „ändere die Hintergrundfarbe auf fast
   weiß, bisschen beige noch". `--paper` in `style.css` von `#F2EDE4` auf **`#FAF7F1`** gesetzt —
   rund die Mitte zwischen bisherigem Ton und Weiß, der warme Stich bleibt (Kanalspanne 9 statt 14).
