@@ -161,12 +161,17 @@ function setupEmbeds() {
             autoplay: 1,
             playsinline: 1,
             rel: 0,
+            cc_load_policy: 0,
           },
           events: {
             onReady: (event) => {
               if (settled) return;
               settled = true;
               clearTimeout(timer);
+              if (typeof event.target.unloadModule === "function") {
+                event.target.unloadModule("captions");
+                event.target.unloadModule("cc");
+              }
               event.target.playVideo();
               embed.classList.remove("embed--loading");
               if (thumb) thumb.remove();
