@@ -44,7 +44,7 @@ Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS
 ## Dateien
 | Datei | Inhalt |
 |---|---|
-| `index.html` | Die gesamte Seite. Szenen: 01 Hero, 02 Projekte, 03 Fotografie, 04 About, 05 Kontakt. (Journey, „Zusammenarbeit" + Projekte 3/4 ausgebaut, s. „Ausgeblendete Inhalte".) |
+| `index.html` | Die gesamte Seite. Szenen: 01 Hero, 02 Fotografie, 03 About, 04 Kontakt. (Projekte-Szene, Journey, „Zusammenarbeit" + Projekte 3/4 ausgebaut, s. „Ausgeblendete Inhalte".) |
 | `main.js` | Gesamtes Verhalten, in nummerierte Abschnitte (1–6) gegliedert – siehe unten. |
 | `style.css` | Gesamtes Styling. Abschnitte per `/* ---------- … ---------- */`. Design-Tokens in `:root`. |
 | `impressum/`, `datenschutz/` | Rechtstexte, eigene `index.html`, teilen sich `../style.css`. |
@@ -86,7 +86,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.3` (V3.3 / `v=3.3`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.4` (V3.4 / `v=3.4`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -193,20 +193,29 @@ Erledigtes aus „Offene Punkte" streichen, neuen Eintrag in „Historie" (oben 
 Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Footer-Marker betrifft
 nur die sichtbare Seite).
 
-### Aktueller Stand (Stand 2026-09-02)
-- **Live-Version:** V3.2 ist live; **V3.3** (`v=3.3`, dieser Stand) schaltet die YouTube-Untertitel
-  im Embed standardmäßig aus. **Versionsschema seit V3.0: Schritte von 0.1** (V2.9 → V3.0 →
-  V3.1 …), s. „Konventionen". (Ablauf: … → V28 = Limit + Zähler entfernt → V2.9 =
+### Aktueller Stand (Stand 2026-09-08)
+- **Live-Version:** V3.3 ist live; **V3.4** (`v=3.4`, dieser Stand) baut die komplette
+  Projekte-Szene mit beiden Kurzfilmen aus (Datenschutz, s. u.). **Versionsschema seit V3.0:
+  Schritte von 0.1** (V2.9 → V3.0 → V3.1 …), s. „Konventionen". (Ablauf: … → V2.9 =
   E-Mail-Live-Prüfung → V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig →
-  V3.2 = Papierton fast weiß → V3.3 = Untertitel aus.)
+  V3.2 = Papierton fast weiß → V3.3 = Untertitel aus → V3.4 = Projekte-Szene ausgebaut.)
+- **⚠️ Projekte-Szene ist ausgebaut (seit V3.4, Datenschutz):** Die zwei Kurzfilme („Was kommt
+  danach?" / Postcard-Challenge und ALLEIN) sind **nicht** auf der Seite, solange die
+  Datenschutzvereinbarungen mit den beteiligten Personen nicht unterschrieben sind. Der komplette
+  Stand liegt in **„Ausgeblendete Inhalte" Block 6** (HTML, JSON-LD, llms.txt-Zeilen,
+  Thumbnail-Wiederherstellung, Checkliste). Auf ein „hol die Projekte zurück" hin: Block 6
+  abarbeiten. **Derzeit ist damit kein `[data-yt]` mehr im HTML** — die Embed-Mechanik in
+  `main.js` bleibt aber vollständig erhalten.
 - **YouTube-Embeds:** Klick-zu-Laden über `youtube-nocookie.com`, Autoplay nach dem Klick,
   **Untertitel standardmäßig aus** (seit V3.3, Details unter „Code-Notizen"). Der CC-Button im
-  Player bleibt bedienbar.
+  Player bleibt bedienbar. Aktuell ohne Video auf der Seite (s. o.).
 - **Szenenköpfe:** Slug und Timecode stehen auf **jeder** Breite in einer Zeile (Betreiberwunsch,
   V3.1). Szene 04 heißt dafür „INT. SCHNITT" statt „INT. SCHNITTPLATZ". Die Schriftgröße rechnet
   sich aus der Viewportbreite, Details unter „Code-Notizen".
-- **Szenen-Nummerierung aktuell:** 01 Hero, 02 Projekte, 03 Fotografie, 04 About, **05 Kontakt**
-  (Kontakt war vorher 06). Bei Wiedereinbau der Journey wandert Kontakt zurück auf 06.
+- **Szenen-Nummerierung aktuell:** 01 Hero, **02 Fotografie, 03 About, 04 Kontakt** (seit V3.4,
+  Projekte-Szene ausgebaut). Bei Wiedereinbau der Projekte wandert alles wieder auf 02 Projekte /
+  03 Fotografie / 04 About / 05 Kontakt, bei zusätzlichem Wiedereinbau der Journey um eine weitere
+  Nummer.
 - **Kontaktformular:** Nachrichtenfeld **ohne Zeichenlimit und ohne Zähler** (seit V28, Betreiber-
   wunsch). Kurz gab es beides (V26/V27) — falls es je zurück soll, steht der komplette Stand in
   PR #28 + #29 bzw. in den Historie-Einträgen zu V26/V27.
@@ -243,10 +252,10 @@ nur die sichtbare Seite).
   `sizes`). Beschreibende Dateinamen (z. B. `see-abenddaemmerung.jpg`), keine `DSC*`/`IMG_*` mehr.
   CSS-Absicherung: `.gallery-item picture { display: contents }`.
 - **`llms.txt`** liegt im Repo-Root (Entitäts-Zusammenfassung, ohne kommerzielle Angebote).
-- **Schema.org** (`index.html`): Person hat `alumniOf` (IT-HTL Ybbs), `award` **und `image`**
-  (seit V22, `https://okmedia.at/assets/oskar-knapp-portrait.jpg`); zwei `VideoObject`
-  (ALLEIN = `QDq6b3w08eM`, „Was kommt danach?" = `5XbbUtZ45v0`) — **beide seit V21 mit `uploadDate`**
-  (monatsgenau, s. „Offene Punkte").
+- **Schema.org** (`index.html`): `@graph` enthält seit V3.4 nur noch **`Person`** (mit `alumniOf`
+  IT-HTL Ybbs, `award` und `image`) und **`WebSite`**. Die zwei `VideoObject` (ALLEIN =
+  `QDq6b3w08eM`, „Was kommt danach?" = `5XbbUtZ45v0`, beide mit `uploadDate`) liegen mit dem Rest
+  der Projekte-Szene im Archiv (Block 6).
 - **About-Portrait:** Echtes Foto `assets/oskar-knapp-portrait.jpg` (900×1200, 3:4, ~137 KB JPEG,
   EXIF entfernt) im `.about-portrait`-`<figure>`; CSS erzwingt `aspect-ratio: 3/4; object-fit: cover`.
   Betreiber lud das Original als `DSC05657.jpg` (3497×4663) auf `main`; jeweils auf 900×1200
@@ -266,7 +275,9 @@ nur die sichtbare Seite).
   ~140 KB JPEG) ersetzt den Platzhalter; Person-Schema um `image` (absolute URL) ergänzt. Optional:
   `og:image` (1200×630 Querformat, aktuell noch `placehold.co`) auf ein echtes Bild umstellen — ein
   3:4-Portrait eignet sich dafür schlecht, daher separat offen gelassen.
-- **VideoObject `uploadDate` — Tag verfeinern (optional):** Feld ist seit V21 gesetzt, aber nur
+- **VideoObject `uploadDate` — ruht (Szene ausgebaut):** Beide `VideoObject` sind seit V3.4 nicht
+  mehr im HTML (Archiv-Block 6). Der folgende Punkt wird erst beim Wiedereinbau wieder aktuell.
+  **Tag verfeinern (optional):** Feld ist seit V21 gesetzt, aber nur
   **monatsgenau** (Betreiber bestätigt: „Was kommt danach?" Mai 2026 → `2026-05-01`, „ALLEIN"
   Februar 2026 → `2026-02-01`). Tag `01` ist Konvention. Bei Gelegenheit den echten Tag aus
   YouTube Studio („Veröffentlicht am …") eintragen, Format `JJJJ-MM-TT`. Kein Blocker mehr — die
@@ -302,6 +313,30 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-09-08 — Projekte-Szene ausgebaut, Datenschutz (V3.4):** Betreiberwunsch: Die beiden
+  Kurzfilme („Was kommt danach?" / Postcard-Challenge, `5XbbUtZ45v0`, und ALLEIN, `QDq6b3w08eM`)
+  müssen runter, bis die Datenschutzvereinbarungen mit den beteiligten Personen unterschrieben sind
+  — **nicht auskommentieren**, sondern archivieren, damit ein Satz zum Zurückholen reicht. Da ohne
+  beide Filme nichts in der Szene übrig bleibt, ist auf Rückfrage die **ganze Szene 02** raus
+  (Betreiber-Entscheidung, gleiches Vorgehen wie beim Journey-Ausbau): Section gelöscht, Nav-Link
+  `PROJEKTE` entfernt, Hero-Scroll-Pfeil auf `#fotos` umgehängt, Szenen neu nummeriert
+  (Fotografie 03→**02**, About 04→**03**, Kontakt 05→**04**, Timecodes unverändert). Ebenfalls raus,
+  damit die Seite auch maschinenlesbar nicht mehr auf die Videos zeigt: beide `VideoObject` aus dem
+  JSON-LD (Komma nach dem `WebSite`-Objekt entfernt, JSON per `json.loads` gegengeprüft), die
+  Sektion „Filme" aus `llms.txt` samt „Projekte (Kurzfilme)" in der Startseiten-Zeile, und die zwei
+  Standbilder `assets/thumbnails/*.jpg` (Ordner dadurch weg — GitHub Pages lieferte sie sonst
+  weiter aus). **Bewusst geblieben** (Betreiber-Entscheidung, eigene Arbeit + öffentliche
+  Auszeichnung, keine Personendaten): About-Absatz über ALLEIN/Sonderpreis, `award` im
+  Person-Schema, die Film-Erwähnungen im `llms.txt`-Fließtext, `meta description`. Unangetastet
+  ebenso CSS (`.scene--projekte`, `.project*`, `.embed*`, `.award`), `setupEmbeds()` in `main.js`
+  (findet derzeit nur kein `[data-yt]` mehr) und der YouTube-Abschnitt der Datenschutzerklärung —
+  beides kommt mit den Videos zurück. Vollständiger Wiedereinbau-Stand inkl. Checkliste und
+  Thumbnail-Rückholung (`git checkout 9e064fe -- assets/thumbnails/`) steht in „Ausgeblendete
+  Inhalte" **Block 6**. Lokal per Playwright geprüft (keine `.embed`/`[data-yt]`-Elemente mehr,
+  vier Szenenköpfe in lückenloser Reihenfolge 01–04, Nav ohne Projekte-Link, Anker `#fotos`
+  erreichbar, keine 404 auf Thumbnails, JSON-LD gültig). `node --check main.js` grün.
+  Version 3.3 → 3.4 (Cache-Buster + Footer-Marker in allen drei HTML-Dateien), `sitemap.xml`
+  `lastmod` der Startseite auf 2026-09-08. Branch `claude/youtube-datenschutz-vertraege-kn2btg`.
 - **2026-09-02 — YouTube-Untertitel standardmäßig aus (V3.3):** Betreiberfrage „warum ist bei yt
   projekte untertitel aktiviert" → Ursache lag **nicht** im Code: `setupEmbeds()` setzte gar keine
   Untertitel-Option, also entschied YouTubes Default „Nutzerpräferenz" (Browser-/OS-Bedienungshilfe
@@ -513,6 +548,8 @@ ausgelieferten Code"). Wiedereinbau = Block von hier 1:1 zurückkopieren.
 **Blöcke 1–4 (kommerzielle Inhalte):** Noch kein Gewerbe angemeldet → keine kommerziellen Angebote
 auf der Seite. Werden reaktiviert, sobald das Gewerbe existiert. Bis dahin: nichts davon auf die
 Seite! **Block 5 (Journey):** vom Betreiber ausgebaut, hat mit dem Gewerbe nichts zu tun.
+**Block 6 (Projekte / beide Kurzfilme):** ausgebaut bis die Datenschutzvereinbarungen mit den
+beteiligten Personen unterschrieben sind — kommt danach 1:1 zurück, hat mit dem Gewerbe nichts zu tun.
 
 > Hinweis: Das Repo (und damit diese Datei) ist öffentlich – GitHub Pages liefert auch `CLAUDE.md`
 > aus. Im Quelltext der *Seite* taucht nichts mehr auf, „geheim" ist dieses Archiv aber nicht.
@@ -707,4 +744,124 @@ Kontakt-Szene.
 
       <a class="journey-cta" href="https://www.youtube.com/@oskar_knapp?sub_confirmation=1" target="_blank" rel="noopener">KANAL ABONNIEREN / @oskar_knapp</a>
     </section>
+```
+
+### 6. Szene 02 / Projekte (beide Kurzfilme) — DATENSCHUTZ
+**Grund:** Ausgebaut am 2026-09-08 auf Betreiberwunsch. Die Datenschutz-/Einwilligungsvereinbarungen
+mit den beteiligten Personen (Darsteller, Team) sind noch nicht unterschrieben, solange dürfen die
+Filme nicht öffentlich auf der Seite stehen. **Kein Gewerbe-Thema.** Sobald die Verträge da sind:
+„hol die Projekte zurück" genügt, alles Nötige steht hier.
+
+**Wiedereinbau-Checkliste (alle sechs Punkte):**
+1. **HTML-Block unten** in `index.html` **zwischen** Hero-Szene (`</section>` von `#start`) und
+   `<section id="fotos">` einsetzen.
+2. **Nav-Link** `<a href="#projekte">PROJEKTE</a>` in `#site-menu` wieder als **ersten** Eintrag
+   (vor FOTOS) ergänzen.
+3. **Scroll-Pfeil im Hero** zurück auf Projekte: `<a class="scroll-hint" href="#fotos">` →
+   `href="#projekte"`.
+4. **Szenen zurück-nummerieren:** Fotografie `SZENE 02` → **03**, About `SZENE 03` → **04**,
+   Kontakt `SZENE 04` → **05** (Timecodes blieben unverändert, nichts zu tun). Steht die Journey
+   (Block 5) gleichzeitig wieder drin, verschiebt sich alles um eine weitere Nummer.
+5. **JSON-LD:** die beiden `VideoObject`-Blöcke unten wieder in den `@graph` von `index.html`
+   einfügen, **nach** dem `WebSite`-Objekt — dabei das Komma nach dessen schließender Klammer
+   wieder setzen (`}` → `},`), sonst ist das JSON kaputt.
+6. **Thumbnails + `llms.txt`:** Die zwei Standbilder wurden gelöscht (der Ordner
+   `assets/thumbnails/` existiert dadurch nicht mehr). Zurückholen aus der Git-Historie:
+   `git checkout 9e064fe -- assets/thumbnails/` (Commit V3.3, direkt vor dem Ausbau).
+   In `llms.txt` die Sektion „Filme" wieder ergänzen und in der Startseiten-Zeile „Projekte
+   (Kurzfilme), " voranstellen:
+
+```
+## Filme
+
+- [Was kommt danach? (YouTube)](https://www.youtube.com/watch?v=5XbbUtZ45v0): Kurzfilm, Postcard-Challenge 2025/26, Sonderpreis der Jury (Kategorie Clip)
+- [ALLEIN (YouTube)](https://www.youtube.com/watch?v=QDq6b3w08eM): Kurzfilm-Drama über Mobbing, Drehbuch/Regie/Kamera/Schnitt: Oskar Knapp
+```
+
+**Bewusst stehen geblieben** (keine Personendaten, nur eigene Arbeit und eine öffentliche
+Auszeichnung, Betreiber-Entscheidung 2026-09-08): der About-Absatz über ALLEIN und den Sonderpreis,
+das Feld `award` im Person-Schema, die Film-Erwähnungen im Fließtext von `llms.txt`, die
+`meta name="description"`. Ebenfalls unangetastet: der YouTube-Abschnitt in
+`datenschutz/index.html` (beschreibt das Klick-zu-Laden-Verfahren, das mit den Videos zurückkommt)
+und das gesamte CSS (`.scene--projekte`, `.projects`, `.project*`, `.embed*`, `.award`) — die
+Embed-Mechanik in `main.js` (`setupEmbeds`) bleibt ebenfalls unverändert, sie findet derzeit nur
+kein `[data-yt]` mehr.
+
+**HTML-Block (Szene 02, 1:1 wie ausgebaut):**
+
+```html
+    <section id="projekte" class="scene scene--projekte">
+      <div class="scene-head" data-animate>
+        <span class="slug">SZENE 02 / EXT. SET / TAG</span>
+        <span class="tc" data-tc="00:01:23:04">TC&nbsp;00:01:23:04</span>
+      </div>
+      <h2 class="scene-title" data-split>PROJEKTE</h2>
+
+      <div class="projects">
+
+        <article class="project" data-animate>
+          <span class="award">SONDERPREIS DER JURY / POSTCARD-CHALLENGE 2025/26</span>
+          <div class="embed" data-yt="5XbbUtZ45v0">
+            <img class="embed-thumb"
+                 src="assets/thumbnails/was-kommt-danach.jpg"
+                 alt="Standbild aus dem Kurzfilm Was kommt danach?" loading="lazy" width="640" height="344">
+            <button class="embed-play" type="button" aria-label="Video abspielen">
+              <svg viewBox="0 0 68 48" aria-hidden="true"><path class="yt-bg" d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z"/><path class="yt-tri" d="M45 24 27 14v20z"/></svg>
+            </button>
+          </div>
+          <div class="project-info">
+            <h3 class="project-title">POSTCARD-CHALLENGE</h3>
+            <p class="project-meta">KURZFILM / KATEGORIE CLIP / 2025/26</p>
+            <p class="project-desc">Teamprojekt am SZ Ybbs. Sonderpreis der Jury in der Kategorie Clip, vergeben von der Diözese St. Pölten im Mai 2026.</p>
+          </div>
+        </article>
+
+        <article class="project" data-animate>
+
+          <div class="embed" data-yt="QDq6b3w08eM">
+            <img class="embed-thumb"
+                 src="assets/thumbnails/thumbnail_allein.jpg"
+                 alt="Standbild aus dem Kurzfilm ALLEIN" loading="lazy" width="1280" height="720">
+            <button class="embed-play" type="button" aria-label="Video abspielen">
+              <svg viewBox="0 0 68 48" aria-hidden="true"><path class="yt-bg" d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z"/><path class="yt-tri" d="M45 24 27 14v20z"/></svg>
+            </button>
+          </div>
+          <div class="project-info">
+            <h3 class="project-title">ALLEIN</h3>
+            <p class="project-meta">KURZFILM / DRAMA / 2026</p>
+            <p class="project-desc">Mein erster eigener Kurzfilm, ein Drama über Mobbing. Drehbuch, Regie, Kamera und Schnitt selbst gemacht.</p>
+          </div>
+        </article>
+
+      </div>
+    </section>
+```
+
+**JSON-LD-Blöcke (beide `VideoObject`, 1:1 wie ausgebaut):**
+
+```json
+      {
+        "@type": "VideoObject",
+        "@id": "https://okmedia.at/#video-was-kommt-danach",
+        "name": "Was kommt danach?",
+        "uploadDate": "2026-05-01",
+        "description": "Kurzfilm, Teamprojekt am SZ Ybbs für die Postcard-Challenge 2025/26. Sonderpreis der Jury in der Kategorie Clip, vergeben von der Diözese St. Pölten im Mai 2026.",
+        "thumbnailUrl": "https://okmedia.at/assets/thumbnails/was-kommt-danach.jpg",
+        "contentUrl": "https://www.youtube.com/watch?v=5XbbUtZ45v0",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/5XbbUtZ45v0",
+        "inLanguage": "de",
+        "creator": { "@id": "https://okmedia.at/#oskar" }
+      },
+      {
+        "@type": "VideoObject",
+        "@id": "https://okmedia.at/#video-allein",
+        "name": "ALLEIN",
+        "uploadDate": "2026-02-01",
+        "description": "Kurzfilm-Drama über Mobbing. Drehbuch, Regie, Kamera und Schnitt: Oskar Knapp.",
+        "thumbnailUrl": "https://okmedia.at/assets/thumbnails/thumbnail_allein.jpg",
+        "contentUrl": "https://www.youtube.com/watch?v=QDq6b3w08eM",
+        "embedUrl": "https://www.youtube-nocookie.com/embed/QDq6b3w08eM",
+        "inLanguage": "de",
+        "creator": { "@id": "https://okmedia.at/#oskar" }
+      }
 ```
