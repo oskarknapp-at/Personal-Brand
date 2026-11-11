@@ -619,6 +619,73 @@ body.menu-open { overflow: hidden; }
   height: 100%;
 }
 
+.drone-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 2rem 2vw;
+  align-items: center;
+  margin-top: clamp(-4.5rem, -5vw, -1.5rem);
+}
+
+.drone-stage {
+  grid-column: 1 / 9;
+  position: relative;
+  margin: 0;
+}
+
+.drone-still {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+}
+
+.drone-stage figcaption { margin-top: clamp(-2.5rem, -3vw, -1rem); }
+
+.drone-info { grid-column: 9 / 13; }
+
+.drone-facts { margin: 0; }
+
+.drone-fact {
+  display: flex;
+  flex-direction: column-reverse;
+  margin-bottom: clamp(1.2rem, 3vh, 2rem);
+}
+
+.drone-fact:nth-child(2) { margin-left: clamp(1rem, 3.5vw, 3.5rem); }
+
+.drone-fact dt {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  margin-top: 0.5rem;
+}
+
+.drone-fact dd {
+  margin: 0;
+  font-weight: 900;
+  font-stretch: 125%;
+  font-size: clamp(3.2rem, 6.6vw, 6.2rem);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.drone-unit {
+  font-size: 0.36em;
+  letter-spacing: 0;
+  margin-left: 0.2em;
+}
+
+.drone-note {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  line-height: 1.9;
+  margin: clamp(1.5rem, 4vh, 2.5rem) 0 0;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--ink);
+}
+
 .about-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -1156,6 +1223,13 @@ body.menu-open { overflow: hidden; }
   .hero-name { margin-bottom: 0.15em; }
 
   .projects { grid-template-columns: 1fr; }
+
+  .drone-grid { margin-top: -2.5rem; }
+
+  .drone-stage,
+  .drone-info { grid-column: 1 / -1; }
+
+  .drone-stage figcaption { margin-top: -1.5rem; }
 
   .about-portrait {
     grid-column: 1 / -1;
