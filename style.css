@@ -639,6 +639,17 @@ body.menu-open { overflow: hidden; }
   object-fit: contain;
 }
 
+.drone-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  pointer-events: none;
+}
+
+.drone-stage.is-live .drone-still { opacity: 0; }
+
 .drone-stage figcaption { margin-top: clamp(-2.5rem, -3vw, -1rem); }
 
 .drone-info { grid-column: 9 / 13; }

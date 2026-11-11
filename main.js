@@ -814,6 +814,162 @@ function setupReel() {
   measure();
 }
 
+const DRONE_VIEW = { fov: 31.42, position: [0.5, 0.34, -0.66], target: [0, 0.004, 0] };
+
+async function startDrone(stage) {
+  const T = await import("./assets/vendor/three-drohne.min.js");
+
+  const canvas = document.createElement("canvas");
+  canvas.className = "drone-canvas";
+  canvas.setAttribute("aria-hidden", "true");
+
+  const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+  const scene = new T.Scene();
+  const camera = new T.PerspectiveCamera(DRONE_VIEW.fov, 4 / 3, 0.05, 5);
+  camera.position.set(...DRONE_VIEW.position);
+  camera.lookAt(...DRONE_VIEW.target);
+
+  scene.add(new T.HemisphereLight(0xffffff, 0x808080, 2));
+  const key = new T.DirectionalLight(0xffffff, 3.4);
+  key.position.set(0.5, 0.9, -0.5);
+  const rim = new T.DirectionalLight(0xffffff, 2.2);
+  rim.position.set(-0.3, 0.6, 0.9);
+  scene.add(key, rim);
+
+  const loader = new T.GLTFLoader();
+  loader.setMeshoptDecoder(T.MeshoptDecoder);
+  const gltf = await loader.loadAsync("assets/drohne/mavic-3-classic.glb");
+
+  const craft = new T.Group();
+  craft.add(gltf.scene);
+  scene.add(craft);
+
+  const arms = [];
+  const blades = [];
+  const props = [];
+  gltf.scene.traverse((node) => {
+    const data = node.userData;
+    if (data.fold_axis) {
+      const joint = { node, axis: new T.Vector3(...data.fold_axis), angle: data.fold_angle };
+      if (node.name.startsWith("Blatt")) blades.push(joint);
+      else arms.push({ ...joint, rear: node.name.startsWith("Arm_R") });
+    }
+    if (data.spin_axis) {
+      const turn = /_(FR|RL)$/.test(node.name) ? 1 : -1;
+      props.push({ node, axis: new T.Vector3(...data.spin_axis), turn, phase: 0 });
+    }
+  });
+
+  const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+  const fold = (joint, folded) => {
+    joint.node.quaternion.setFromAxisAngle(joint.axis, joint.angle * folded);
+  };
+  const pose = (ms) => {
+    arms.forEach((arm) => fold(arm, 1 - ease(arm.rear ? (ms - 160) / 440 : ms / 420)));
+    blades.forEach((blade) => fold(blade, 1 - ease((ms - 300) / 300)));
+  };
+
+  const fit = () => {
+    const width = stage.clientWidth;
+    if (width) renderer.setSize(width, Math.round(width * 0.75), false);
+  };
+  fit();
+  pose(0);
+  renderer.render(scene, camera);
+  stage.appendChild(canvas);
+  stage.classList.add("is-live");
+
+  let visible = false;
+  let opened = -1;
+  let settled = false;
+  let raf = 0;
+  let last = 0;
+  let lastY = window.scrollY;
+  let velocity = 0;
+  let spin = 0;
+  let pitch = 0;
+  let pitchSpeed = 0;
+  let clock = 0;
+
+  const frame = (now) => {
+    raf = requestAnimationFrame(frame);
+    const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
+    last = now;
+    if (!dt) return;
+
+    const y = window.scrollY;
+    velocity += ((y - lastY) / dt - velocity) * (1 - Math.exp(-dt / 0.22));
+    lastY = y;
+    const drive = Math.max(-1, Math.min(1, velocity / 2200));
+
+    if (opened < 0) return;
+    const since = now - opened;
+    if (!settled) {
+      pose(since);
+      settled = since >= 600;
+    }
+
+    const flying = since > 600;
+    spin += ((flying ? 6 + Math.abs(drive) * 30 : 0) - spin) * (1 - Math.exp(-dt / 0.45));
+    props.forEach((prop) => {
+      prop.phase += spin * dt * prop.turn;
+      prop.node.quaternion.setFromAxisAngle(prop.axis, prop.phase);
+    });
+
+    const aim = flying ? -drive * 0.14 : 0;
+    pitchSpeed += ((aim - pitch) * 38 - pitchSpeed * 10.5) * dt;
+    pitch += pitchSpeed * dt;
+    craft.rotation.x = pitch;
+
+    clock += dt;
+    const calm = flying ? 1 - Math.abs(drive) : 0;
+    craft.position.y = Math.sin(clock * 1.5) * 0.005 * calm;
+    craft.rotation.z = Math.sin(clock * 0.9) * 0.012 * calm;
+
+    renderer.render(scene, camera);
+  };
+
+  const sync = () => {
+    cancelAnimationFrame(raf);
+    last = 0;
+    lastY = window.scrollY;
+    velocity = 0;
+    if (visible) raf = requestAnimationFrame(frame);
+  };
+
+  new IntersectionObserver((entries) => {
+    const entry = entries[entries.length - 1];
+    visible = entry.isIntersecting;
+    if (opened < 0 && entry.intersectionRatio >= 0.45) opened = performance.now();
+    sync();
+  }, { threshold: [0, 0.45] }).observe(stage);
+
+  if ("ResizeObserver" in window) {
+    new ResizeObserver(() => {
+      fit();
+      renderer.render(scene, camera);
+    }).observe(stage);
+  }
+}
+
+function setupDrone() {
+  const stage = $(".drone-stage");
+  if (!stage || reducedMotion) return;
+  if (!window.matchMedia("(min-width: 801px)").matches) return;
+  if (!("IntersectionObserver" in window) || !("WebGL2RenderingContext" in window)) return;
+
+  const near = new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    near.disconnect();
+    startDrone(stage).catch((error) => {
+      console.warn("3D-Drohne konnte nicht geladen werden, das Standbild bleibt stehen.", error);
+    });
+  }, { rootMargin: "700px 0px" });
+  near.observe(stage);
+}
+
 setupAge();
 setupProgress();
 setupViewfinder();
@@ -824,6 +980,7 @@ setupGallery();
 setupEmailCheck();
 setupForm();
 setupHeroVideo();
+setupDrone();
 setupScroll();
 
 if (!reducedMotion) {
