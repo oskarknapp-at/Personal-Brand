@@ -420,6 +420,16 @@ function setupEmailCheck() {
   };
 }
 
+const CLAPPER =
+  '<svg class="clapper" viewBox="0 0 34 28" aria-hidden="true" focusable="false">' +
+  '<rect class="clapper-board" x="2" y="12.5" width="30" height="13.5" rx="1.2"/>' +
+  '<path class="clapper-rule" d="M6 18.5h22M6 22h13"/>' +
+  '<g class="clapper-base"><rect x="2" y="8.5" width="30" height="4"/>' +
+  '<path d="M9 8.5l-3 4M17 8.5l-3 4M25 8.5l-3 4"/></g>' +
+  '<g class="clapper-arm"><rect x="2" y="4.5" width="30" height="4"/>' +
+  '<path d="M6 4.5l3 4M14 4.5l3 4M22 4.5l3 4"/></g>' +
+  "</svg>";
+
 function setupForm() {
   const form = $(".contact-form");
   if (!form) return;
@@ -463,7 +473,9 @@ function setupForm() {
       const data = await response.json();
       if (!data.success) throw new Error(data.message);
 
-      status.textContent = "GESENDET / Danke, ich melde mich.";
+      status.textContent = "GESENDET / Is im Kasten.";
+      status.insertAdjacentHTML("afterbegin", CLAPPER);
+      status.dataset.state = "sent";
       form.reset();
     } catch {
       status.dataset.state = "error";

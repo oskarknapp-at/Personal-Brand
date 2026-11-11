@@ -923,6 +923,43 @@ body.menu-open { overflow: hidden; }
 
 .form-status[data-state="error"] { color: var(--red); }
 
+.form-status[data-state="sent"] {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+}
+
+.clapper {
+  flex: none;
+  width: 2.6em;
+  height: auto;
+  overflow: visible;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.clapper-base rect,
+.clapper-arm rect { fill: var(--ink); }
+
+.clapper-base path,
+.clapper-arm path { stroke: var(--paper); stroke-width: 1.6; stroke-linecap: butt; }
+
+.clapper-rule { stroke-width: 1; }
+
+.clapper-arm {
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+  animation: clapper-shut 300ms cubic-bezier(0.6, 0, 1, 0.5) 80ms both;
+}
+
+@keyframes clapper-shut {
+  from { transform: rotate(-30deg); }
+  to { transform: rotate(0deg); }
+}
+
 .contact-links {
   grid-column: 1 / 12;
   display: flex;
