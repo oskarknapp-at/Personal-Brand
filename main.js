@@ -674,9 +674,138 @@ function setupViewfinder() {
   });
 }
 
+const REEL_CORE = 4.5;
+const REEL_FULL = 12;
+
+const REEL =
+  '<nav class="reel" aria-label="Szenen">' +
+  '<svg class="reel-cam" viewBox="0 0 64 70" aria-hidden="true" focusable="false">' +
+  '<path class="reel-film" d="M46 30.5V41q0 6-6 6H22.5q-6 0-6-6V30.5"/>' +
+  '<g class="reel-spool" data-spool="take">' +
+  '<circle class="reel-pack" cx="16.5" cy="16.5" r="4.5"/>' +
+  '<circle cx="16.5" cy="16.5" r="14"/>' +
+  '<g class="reel-spokes"><path d="M16.5 14.3V3.5M18.4 17.6l9.4 5.4M14.6 17.6l-9.4 5.4"/></g>' +
+  '<circle class="reel-hub" cx="16.5" cy="16.5" r="2.2"/>' +
+  "</g>" +
+  '<g class="reel-spool" data-spool="feed">' +
+  '<circle class="reel-pack" cx="46" cy="16.5" r="12"/>' +
+  '<circle cx="46" cy="16.5" r="14"/>' +
+  '<g class="reel-spokes"><path d="M46 14.3V3.5M47.9 17.6l9.4 5.4M44.1 17.6l-9.4 5.4"/></g>' +
+  '<circle class="reel-hub" cx="46" cy="16.5" r="2.2"/>' +
+  "</g>" +
+  '<rect x="7" y="33" width="44" height="30" rx="2"/>' +
+  '<path d="M51 41h5v14h-5M56 43.5l6.5-4.5v18l-6.5-4.5"/>' +
+  '<path d="M24 63v4h12v-4"/>' +
+  "</svg>" +
+  '<div class="reel-track"><i class="reel-pos"></i></div>' +
+  '<p class="reel-label" aria-hidden="true"></p>' +
+  "</nav>";
+
+function setupReel() {
+  const scenes = $$("main > .scene[id]");
+  if (!scenes.length) return;
+
+  document.body.insertAdjacentHTML("beforeend", REEL);
+  document.documentElement.classList.add("has-reel");
+
+  const reel = $(".reel");
+  const track = $(".reel-track", reel);
+  const pos = $(".reel-pos", reel);
+  const label = $(".reel-label", reel);
+  const film = $(".reel-film", reel);
+  const spools = {};
+  $$(".reel-spool", reel).forEach((spool) => {
+    const pack = $(".reel-pack", spool);
+    spools[spool.dataset.spool] = {
+      pack,
+      spokes: $(".reel-spokes", spool),
+      cx: pack.getAttribute("cx"),
+      cy: pack.getAttribute("cy"),
+    };
+  });
+
+  const wide = window.matchMedia("(min-width: 1100px) and (min-height: 560px)");
+  let ratio = 0;
+  let hovered = "";
+
+  const marks = scenes.map((scene, index) => {
+    const number = String(index + 1).padStart(2, "0");
+    const title = $(".scene-title", scene)?.textContent.trim() || "Start";
+    const link = document.createElement("a");
+    link.className = "reel-mark";
+    link.href = `#${scene.id}`;
+    link.setAttribute("aria-label", `Szene ${number}, ${title}`);
+    const name = `SZENE ${number}`;
+    const show = () => {
+      hovered = name;
+      render();
+    };
+    const hide = () => {
+      hovered = "";
+      render();
+    };
+    link.addEventListener("pointerenter", show);
+    link.addEventListener("pointerleave", hide);
+    link.addEventListener("focus", show);
+    link.addEventListener("blur", hide);
+    track.appendChild(link);
+    return { scene, link, name, at: 0 };
+  });
+
+  const radius = (fill) =>
+    Math.sqrt(REEL_CORE ** 2 + (REEL_FULL ** 2 - REEL_CORE ** 2) * fill).toFixed(2);
+
+  function render() {
+    if (!wide.matches) return;
+
+    const turn = reducedMotion ? 0 : ratio * 1440;
+    spools.feed.pack.setAttribute("r", radius(1 - ratio));
+    spools.take.pack.setAttribute("r", radius(ratio));
+    Object.values(spools).forEach(({ spokes, cx, cy }) => {
+      spokes.setAttribute("transform", `rotate(${turn.toFixed(1)} ${cx} ${cy})`);
+    });
+    film.style.strokeDashoffset = reducedMotion ? "0" : (-ratio * 260).toFixed(1);
+    reel.dataset.film = ratio > 0.995 ? "out" : "in";
+    pos.style.top = `${(ratio * 100).toFixed(2)}%`;
+
+    let current = marks[0];
+    marks.forEach((mark) => {
+      if (mark.at <= ratio + 0.004) current = mark;
+    });
+    marks.forEach((mark) => {
+      if (mark === current) mark.link.setAttribute("aria-current", "true");
+      else mark.link.removeAttribute("aria-current");
+    });
+    label.textContent = hovered || current.name;
+  }
+
+  const measure = () => {
+    if (!wide.matches) return;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const offset = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    marks.forEach((mark, index) => {
+      const top = mark.scene.getBoundingClientRect().top + window.scrollY - offset;
+      mark.at = index === 0 || max <= 0 ? 0 : Math.min(1, Math.max(0, top / max));
+      mark.link.style.top = `${(mark.at * 100).toFixed(2)}%`;
+    });
+    render();
+  };
+
+  onScrollRatio((value) => {
+    ratio = value;
+    render();
+  });
+
+  wide.addEventListener("change", measure);
+  window.addEventListener("load", measure);
+  if ("ResizeObserver" in window) new ResizeObserver(measure).observe(document.body);
+  measure();
+}
+
 setupAge();
 setupProgress();
 setupViewfinder();
+setupReel();
 setupBurger();
 setupEmbeds();
 setupGallery();

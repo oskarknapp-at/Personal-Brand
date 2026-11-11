@@ -96,6 +96,118 @@ body::after {
   transition: width 120ms linear;
 }
 
+.reel { display: none; }
+
+@media (min-width: 1100px) and (min-height: 560px) {
+  .has-reel {
+    --rail: 6.5rem;
+    --edge: max(var(--gutter), calc(var(--rail) - max(0px, (100vw - 90rem) / 2)));
+  }
+
+  .has-reel .progress { display: none; }
+
+  .has-reel .site-nav,
+  .has-reel .scene,
+  .has-reel .site-footer { padding-left: var(--edge); }
+
+  .has-reel .reel {
+    display: block;
+    position: fixed;
+    left: 1.25rem;
+    top: 50%;
+    width: 4rem;
+    transform: translateY(-50%);
+    z-index: 90;
+    color: var(--ink);
+  }
+
+  .reel-cam {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .reel-pack {
+    fill: color-mix(in srgb, var(--ink) 14%, transparent);
+    stroke-width: 0.9;
+  }
+
+  .reel-hub { fill: var(--paper); }
+
+  .reel-film {
+    stroke: var(--red);
+    stroke-width: 1.6;
+    stroke-linecap: butt;
+    stroke-dasharray: 2.2 2.2;
+    transition: opacity 300ms ease-out;
+  }
+
+  .reel[data-film="out"] .reel-film { opacity: 0; }
+
+  .reel-track {
+    position: relative;
+    width: 1px;
+    height: 7.5rem;
+    margin: 0 0 0 calc(30 / 64 * 100%);
+    background: currentColor;
+  }
+
+  .reel-mark {
+    position: absolute;
+    left: -1.5rem;
+    width: 3rem;
+    height: 0.9rem;
+    margin-top: -0.45rem;
+    display: block;
+  }
+
+  .reel-mark::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 0.7rem;
+    height: 1px;
+    margin-left: -0.35rem;
+    background: var(--ink);
+    transition: width 150ms ease-out, margin-left 150ms ease-out, background 150ms ease-out;
+  }
+
+  .reel-mark:hover::before,
+  .reel-mark:focus-visible::before {
+    width: 1.3rem;
+    margin-left: -0.65rem;
+    background: var(--red);
+  }
+
+  .reel-pos {
+    position: absolute;
+    left: -0.2rem;
+    width: calc(0.4rem + 1px);
+    height: calc(0.4rem + 1px);
+    margin-top: -0.2rem;
+    border-radius: 50%;
+    background: var(--red);
+    pointer-events: none;
+  }
+
+  .reel-label {
+    margin: 0.9rem 0 0;
+    width: calc(60 / 64 * 100%);
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.56rem;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+}
+
 .site-nav {
   position: sticky;
   top: 0;
