@@ -20,27 +20,39 @@ function setupAge() {
   });
 }
 
-function setupProgress() {
-  const fill = $(".progress-fill");
-  if (!fill) return;
+const scrollWatchers = [];
 
+function onScrollRatio(watcher) {
+  scrollWatchers.push(watcher);
+}
+
+function setupScroll() {
   let ticking = false;
   const update = () => {
     const doc = document.documentElement;
     const max = doc.scrollHeight - window.innerHeight;
-    const ratio = max > 0 ? window.scrollY / max : 0;
-    fill.style.width = `${(ratio * 100).toFixed(2)}%`;
+    const ratio = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+    scrollWatchers.forEach((watcher) => watcher(ratio));
     ticking = false;
   };
+  const request = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(update);
+  };
 
-  window.addEventListener("scroll", () => {
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(update);
-    }
-  }, { passive: true });
-
+  window.addEventListener("scroll", request, { passive: true });
+  window.addEventListener("resize", request, { passive: true });
   update();
+}
+
+function setupProgress() {
+  const fill = $(".progress-fill");
+  if (!fill) return;
+
+  onScrollRatio((ratio) => {
+    fill.style.width = `${(ratio * 100).toFixed(2)}%`;
+  });
 }
 
 function setupBurger() {
@@ -462,17 +474,17 @@ function setupForm() {
   });
 }
 
-const FPS = 24;
+const FPS = 25;
 
-function tcToFrames(tc) {
+function tcToFrames(tc, fps = FPS) {
   const [h, m, s, f] = tc.split(":").map(Number);
-  return (h * 3600 + m * 60 + s) * FPS + f;
+  return (h * 3600 + m * 60 + s) * fps + f;
 }
 
-function framesToTc(total) {
+function framesToTc(total, fps = FPS) {
   const frames = Math.max(0, Math.round(total));
-  const f = frames % FPS;
-  const seconds = Math.floor(frames / FPS);
+  const f = frames % fps;
+  const seconds = Math.floor(frames / fps);
   const s = seconds % 60;
   const m = Math.floor(seconds / 60) % 60;
   const h = Math.floor(seconds / 3600);
@@ -582,14 +594,96 @@ function setupHeroVideo() {
   video.play().catch(() => {});
 }
 
+const VIEWFINDER =
+  '<div class="vf" aria-hidden="true">' +
+  '<i class="vf-corner vf-corner--tl"></i><i class="vf-corner vf-corner--tr"></i>' +
+  '<i class="vf-corner vf-corner--bl"></i><i class="vf-corner vf-corner--br"></i>' +
+  '<div class="vf-group vf-group--tl">' +
+  '<span class="vf-rec"><i class="vf-dot"></i>REC</span>' +
+  '<span class="vf-tc">00:00:00:00</span>' +
+  "</div>" +
+  '<div class="vf-group vf-group--tr">' +
+  '<svg class="vf-batt" viewBox="0 0 28 14" focusable="false">' +
+  '<rect class="vf-batt-case" x="0.75" y="0.75" width="23.5" height="12.5" rx="2"/>' +
+  '<rect class="vf-batt-tip" x="25.5" y="4.5" width="2" height="5" rx="0.6"/>' +
+  '<rect class="vf-batt-level" x="2.75" y="2.75" width="19.5" height="8.5" rx="0.6"/>' +
+  "</svg>" +
+  '<span class="vf-pct">100%</span>' +
+  "</div>" +
+  '<div class="vf-group vf-group--br vf-extra">' +
+  "<span>4K 25p</span><span>S-Log3</span><span>ISO 800</span><span>180.0°</span>" +
+  "</div>" +
+  "</div>";
+
+function setupViewfinder() {
+  const frame = $(".hero-frame");
+  const video = $(".hero-video");
+  if (!frame || !video) return;
+
+  frame.insertAdjacentHTML("beforeend", VIEWFINDER);
+  const vf = $(".vf", frame);
+  const tc = $(".vf-tc", vf);
+  const pct = $(".vf-pct", vf);
+  const level = $(".vf-batt-level", vf);
+  const levelWidth = parseFloat(level.getAttribute("width"));
+
+  let shownFrame = -1;
+  let shownRec = "";
+  const paint = () => {
+    const seconds = video.currentTime;
+    const frameNo = Math.floor(seconds * FPS + 0.0001);
+    if (frameNo !== shownFrame) {
+      shownFrame = frameNo;
+      tc.textContent = framesToTc(frameNo);
+    }
+    const rec = seconds % 1 < 0.5 ? "on" : "off";
+    if (rec !== shownRec) {
+      shownRec = rec;
+      vf.dataset.rec = rec;
+    }
+  };
+
+  let raf = 0;
+  let inView = true;
+  const loop = () => {
+    paint();
+    raf = requestAnimationFrame(loop);
+  };
+  const sync = () => {
+    cancelAnimationFrame(raf);
+    if (inView && !video.paused) loop();
+    else paint();
+  };
+
+  ["playing", "pause", "seeked"].forEach((type) => video.addEventListener(type, sync));
+
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(([entry]) => {
+      inView = entry.isIntersecting;
+      sync();
+    }).observe(frame);
+  }
+
+  sync();
+
+  onScrollRatio((ratio) => {
+    const charge = Math.round(100 - ratio * 85);
+    pct.textContent = `${charge}%`;
+    level.setAttribute("width", ((levelWidth * charge) / 100).toFixed(2));
+    vf.dataset.battery = charge <= 20 ? "low" : "ok";
+  });
+}
+
 setupAge();
 setupProgress();
+setupViewfinder();
 setupBurger();
 setupEmbeds();
 setupGallery();
 setupEmailCheck();
 setupForm();
 setupHeroVideo();
+setupScroll();
 
 if (!reducedMotion) {
   try {
