@@ -11,8 +11,11 @@ Statische **Ein-Seiten-Portfolio-Website** (Oskar Knapp, Videograf). Live: `okme
 Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS.
 
 ## Stack & harte Regeln
-- **Vanilla JS**, ES-Module. Einzige externe Lib: **anime.js v4** – wird in `main.js` per
-  dynamischem Import vom CDN geladen (`if (!reducedMotion)`). Fällt das CDN aus, läuft alles ohne Animation.
+- **Vanilla JS**, ES-Module. Einzige externe Lib: **anime.js v4** – **seit V3.7 selbst gehostet**
+  (`assets/vendor/anime.esm.min.js`, unverändert aus dem npm-Paket `animejs@4.0.2`, Datei
+  `lib/anime.esm.min.js`, MIT). `main.js` lädt sie per dynamischem Import (`if (!reducedMotion)`).
+  Schlägt das Laden fehl, läuft alles ohne Animation. Vorher kam sie von `cdn.jsdelivr.net`, das war
+  ein externer Request beim Seitenaufbau und widersprach der DSGVO-Regel.
 - **Progressive Enhancement ist Pflicht:** Ohne JS muss die Seite komplett lesbar sein und das
   Formular klassisch per POST senden. Startzustände von Animationen werden erst in JS gesetzt
   (`utils.set`), nie im CSS versteckt.
@@ -52,7 +55,7 @@ Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS
 | `main.js` | Gesamtes Verhalten, in nummerierte Abschnitte (1–6) gegliedert – siehe unten. |
 | `style.css` | Gesamtes Styling. Abschnitte per `/* ---------- … ---------- */`. Design-Tokens in `:root`. |
 | `impressum/`, `datenschutz/` | Rechtstexte, eigene `index.html`, teilen sich `../style.css`. |
-| `assets/` | Fotos, `fonts/`, `drohne/` (Standbild als WebP in 480/960/1600 und `mavic-3-classic.glb`), `vendor/` (three.js-Bündel, einzige Datei mit Lizenz-Kommentar, s. „3D-Drohne"). |
+| `assets/` | Fotos, `fonts/`, `drohne/` (Standbild als WebP in 480/960/1600 und `mavic-3-classic.glb`), `vendor/` (three.js-Bündel und anime.js, die einzigen Dateien mit Lizenz-Kommentar, s. „3D-Drohne"). |
 | `robots.txt`, `sitemap.xml` | SEO. |
 | `.github/workflows/static.yml` | Deploy (s. u.). |
 
@@ -72,8 +75,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
    ohne Reload. `access_key` steht als hidden input in `index.html` (öffentlich, kein Secret).
    4b. `setupEmailCheck()` + `editDistance()` / `suggestDomain()` / `emailProblem()` – Live-Prüfung
    des E-Mail-Feldes (grüner Haken / roter Hinweis / Tippfehler-Vorschlag), s. „Code-Notizen".
-   4c. `buildSlate()` + `SLATE_ARM` – beschriftete Klappe (PROD, SZENE, TAKE, DATUM), die `setupForm()`
-   beim Absenden unter die Statuszeile setzt und bei Erfolg zuschlagen lässt.
+   4c. `CLAPPER` – SVG-Klappe, die `setupForm()` nach erfolgreichem Versand in die Statuszeile setzt.
 5. `tcToFrames(tc, fps)` / `framesToTc(total, fps)` – Timecode-Hilfen, Format `HH:MM:SS:FF`. `fps` ist
    Parameter, Standard `FPS = 25` (echte Framerate von `show_reel.mp4`, s. „Code-Notizen").
 6. `initMotion({…anime})` – alle Animationen (Hero-Timeline, Szenentitel, Timecode-Counter,
@@ -90,8 +92,8 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
 
 ## Von JS erzeugte Elemente (stehen nicht im HTML)
 Ohne JS gibt es keines davon, deshalb auch keine toten Elemente: `.vf` (Sucher, in `.hero-frame`),
-`.reel` (Filmkamera, am Ende von `<body>`, dazu Klasse `has-reel` auf `<html>`), `.slate` (Klappe,
-nach `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), `.field-check`,
+`.reel` (Filmkamera, am Ende von `<body>`, dazu Klasse `has-reel` auf `<html>`), `.clapper` (Klappe
+in `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), `.field-check`,
 `.lightbox` (Dialog am Ende von `<body>`, dazu Klasse `is-locked` auf `<html>` solange offen),
 `.counter-reel` (in `.about-number`), `data-time="nacht"` am Hero-Szenenkopf.
 
@@ -112,7 +114,7 @@ nach `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`)
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.6` (V3.6 / `v=3.6`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.7` (V3.7 / `v=3.7`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -237,13 +239,13 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   dem Marker, damit nichts über den Inhalt ragt. Am Seitenende blendet der Filmstreifen aus (Film
   ist durch). Bei reduced motion drehen Speichen und Perforation nicht, Füllstand und Positions-
   punkt zeigen den Fortschritt aber weiter an (Information, keine Animation).
-- **Klappe (`.slate`, seit V3.6 beschriftet):** Betreiber-Vorgabe: **vor dem Absenden nicht
-  sichtbar**, sie erscheint erst beim Senden (offen), schlägt bei Erfolg zu (`slate-shut`, 80 ms
-  Verzögerung + 300 ms) und bleibt bei Fehlern offen. Texte nur per `textContent` (Name höchstens
-  40 Zeichen, CSS kürzt mit Auslassungszeichen, leer ergibt `OHNE TITEL`). Datum per `Intl` in
-  Europe/Vienna. **TAKE zählt erfolgreiche Sendungen** (erst nach einem Erfolg steht TAKE 2, ein
-  Fehlversuch zählt nicht). Bei reduced motion steht `.is-shut` sofort geschlossen da. Sie hängt
-  **nach** `.form-status`, nicht darin, weil die Statuszeile per `textContent` überschrieben wird.
+- **Klappe (`CLAPPER`):** reines CSS (`clapper-shut`, 80 ms Verzögerung + 300 ms), kein anime.js.
+  Der **Grundzustand ist geschlossen**, nur die Animation startet offen. Dadurch steht sie bei
+  reduced motion (globales `animation: none`) sofort geschlossen da. Sie hängt in `.form-status`
+  und verschwindet von selbst, sobald der nächste Status per `textContent` gesetzt wird.
+  **V3.6 hatte kurz eine größere, beschriftete Klappe** (PROD, SZENE, TAKE, DATUM, erschien beim
+  Senden). Auf Betreiberwunsch ist seit V3.7 wieder die kleine Klappe aus V3.5 drin. Der Stand von
+  V3.6 liegt in Git (Commit `5165301`, Funktion `buildSlate()` und CSS `.slate*`).
 - **Tageszeit im Slug (`sunIsUp`):** Sonnenhöhe aus dem aktuellen UTC-Zeitpunkt und Melk
   (48,23° N, 15,33° O), vereinfachte Formel (USNO/NOAA), Grenze −0,833°. Weil ein Zeitpunkt
   weltweit gleich ist, stimmt das ohne Zeitzonen-Rechnung für Europe/Vienna, auch für Besucher in
@@ -404,9 +406,9 @@ Ordner **außerhalb** des Repos, `drohne-entry.js` dorthin kopieren). Das Bünde
 
 **Größen:** GLB 597 KB (Budget 800), three.js-Bündel 648 KB roh, 163 KB gzip (Budget 200).
 
-**Kommentar-Regel und Vendor-Datei:** `assets/vendor/three-drohne.min.js` behält den
-Copyright-Hinweis von three.js (MIT verlangt ihn). Die Regel „kein Kommentar" gilt für die fünf
-eigenen Dateien, nicht für diese fremde Datei.
+**Kommentar-Regel und Vendor-Dateien:** `assets/vendor/three-drohne.min.js` und
+`assets/vendor/anime.esm.min.js` behalten ihre Copyright-Hinweise (MIT verlangt sie). Die Regel
+„kein Kommentar" gilt für die fünf eigenen Dateien, nicht für diese fremden Dateien.
 
 ---
 
@@ -419,6 +421,8 @@ Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Fo
 nur die sichtbare Seite).
 
 ### Aktueller Stand (Stand 2026-11-12)
+- **V3.7 (live seit 2026-11-12):** Klappe wieder wie in V3.5 (klein, in der Statuszeile, nach dem
+  Senden), anime.js selbst gehostet. Beim Seitenaufbau gibt es damit keinen externen Request mehr.
 - **V3.6 (live seit 2026-11-12, Squash-Merge von `feature/v3.6`):** Drohnen-Fix (kein Sprung,
   früher, 900 ms), Drohne am Handy in 3D, Abheben, Showreel 2,4 MB mit Poster, NACHT im Slug,
   Bildzählwerk, beschriftete Klappe beim Senden, Großansicht der Fotos. Sicherungspunkt davor:
@@ -427,12 +431,13 @@ nur die sichtbare Seite).
   Scroll-Fortschritt (Desktop), Klappe im Kontaktformular, neue Szene 03 Drohne mit 3D-Modell.
   Details unter „Code-Notizen" und „3D-Drohne". Sicherungspunkt vor dem Umbau: Git-Tag
   `vor-animationen` (auf `5501cac`, auch auf GitHub).
-- **Live-Version:** **V3.6** (`v=3.6`, s. o.). **Versionsschema seit V3.0:
+- **Live-Version:** **V3.7** (`v=3.7`, s. o.). **Versionsschema seit V3.0:
   Schritte von 0.1** (V2.9 → V3.0 → V3.1 …), s. „Konventionen". (Ablauf: … → V2.9 =
   E-Mail-Live-Prüfung → V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig →
   V3.2 = Papierton fast weiß → V3.3 = Untertitel aus → V3.4 = Projekte-Szene ausgebaut →
   V3.5 = Bewegung: Sucher-Overlay, Filmkamera, Drohnen-Szene, Klappe → V3.6 = Drohnen-Fix,
-  Drohne am Handy, Abheben, Showreel klein, Slug-Tageszeit, Zählwerk, Klappe, Großansicht.)
+  Drohne am Handy, Abheben, Showreel klein, Slug-Tageszeit, Zählwerk, Klappe, Großansicht →
+  V3.7 = Klappe zurück auf V3.5, anime.js selbst gehostet.)
 - **⚠️ Projekte-Szene ist ausgebaut (seit V3.4, Datenschutz):** Die zwei Kurzfilme („Was kommt
   danach?" / Postcard-Challenge und ALLEIN) sind **nicht** auf der Seite, solange die
   Datenschutzvereinbarungen mit den beteiligten Personen nicht unterschrieben sind. Der komplette
@@ -500,9 +505,6 @@ nur die sichtbare Seite).
   (s. o.). Das frühere `<img fetchpriority="high">` gibt es dort nicht mehr.
 
 ### Offene Punkte (TODO)
-- **anime.js kommt beim Seitenaufbau vom CDN (`cdn.jsdelivr.net`):** Das ist ein externer Request
-  und widerspricht der DSGVO-Regel oben. Bestand schon vor V3.6 (Prüfer-Hinweis vom 12.11.).
-  Lösung wäre, anime.js selbst zu hosten wie three.js. Betreiber entscheidet.
 - **Drohne am echten Handy:** gemessen nur mit Chrome und Mac-GPU. Betreiber testet am iPhone.
 - **Luftbild für die Drohnen-Szene (optional, Betreiber liefert):** Datei als
   `assets/drohne/luftbild.jpg` ablegen (dazu WebP-Varianten nach der Bild-Konvention), dann diesen
@@ -596,6 +598,13 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-11-12 — Klappe zurück, anime.js selbst gehostet (V3.7):** Betreiberwunsch „die klappe
+  zurück zu version 3.5, und ja selbst hosten". `CLAPPER`, `setupForm()` und das Klappen-CSS sind
+  1:1 der Stand von `vor-v3.6` (per `diff` geprüft), `buildSlate()` und `.slate*` sind raus.
+  anime.js 4.0.2 liegt als `assets/vendor/anime.esm.min.js` (76 KB roh) im Repo, der Import in
+  `main.js` zeigt auf die lokale Datei. Geprüft mit Playwright bei 1440×900 und 390×844: Animationen
+  laufen, keine Konsolenfehler, beim Seitenaufbau nur Anfragen an den eigenen Server, Klappe
+  erscheint nach dem (gemockten) Senden in der Statuszeile. Version 3.6 → 3.7.
 - **2026-11-12 — V3.6: Drohnen-Fix, Drohne am Handy, fünf Details:** Auftrag „Prompt Opus –
   Website V3.6". **(A)** Ursache des Sprungs gefunden und belegt (Log vorher 3,916 mm in einem
   Frame, nachher höchstens 0,2 mm), Ausklappen früher und in 900 ms. **(B)** Drohne auch am Handy

@@ -420,50 +420,15 @@ function setupEmailCheck() {
   };
 }
 
-const SLATE_ARM =
-  '<svg class="slate-arm" viewBox="0 0 220 22" preserveAspectRatio="none" focusable="false">' +
-  '<rect x="0" y="0" width="220" height="22"/>' +
-  '<path d="M18 0h20l-14 22H4zM62 0h20l-14 22H48zM106 0h20l-14 22H92zM150 0h20l-14 22h-20zM194 0h20l-14 22h-20z"/>' +
+const CLAPPER =
+  '<svg class="clapper" viewBox="0 0 34 28" aria-hidden="true" focusable="false">' +
+  '<rect class="clapper-board" x="2" y="12.5" width="30" height="13.5" rx="1.2"/>' +
+  '<path class="clapper-rule" d="M6 18.5h22M6 22h13"/>' +
+  '<g class="clapper-base"><rect x="2" y="8.5" width="30" height="4"/>' +
+  '<path d="M9 8.5l-3 4M17 8.5l-3 4M25 8.5l-3 4"/></g>' +
+  '<g class="clapper-arm"><rect x="2" y="4.5" width="30" height="4"/>' +
+  '<path d="M6 4.5l3 4M14 4.5l3 4M22 4.5l3 4"/></g>' +
   "</svg>";
-
-function buildSlate() {
-  const slate = document.createElement("div");
-  slate.className = "slate";
-  slate.setAttribute("aria-hidden", "true");
-  slate.insertAdjacentHTML("afterbegin", SLATE_ARM);
-
-  const board = document.createElement("div");
-  board.className = "slate-board";
-  const row = (...cells) => {
-    const line = document.createElement("div");
-    line.className = "slate-row";
-    cells.forEach((cell) => line.appendChild(cell));
-    board.appendChild(line);
-    return line;
-  };
-  const cell = (label, value) => {
-    const box = document.createElement("span");
-    box.className = "slate-cell";
-    const key = document.createElement("span");
-    key.className = "slate-key";
-    key.textContent = label;
-    const text = document.createElement("span");
-    text.className = "slate-value";
-    text.textContent = value;
-    box.append(key, text);
-    return { box, text };
-  };
-
-  const prod = cell("PROD", "");
-  const scene = cell("SZENE", "05");
-  const take = cell("TAKE", "1");
-  const date = cell("DATUM", "");
-  row(prod.box).classList.add("slate-row--wide");
-  row(scene.box, take.box, date.box);
-  slate.appendChild(board);
-
-  return { slate, name: prod.text, take: take.text, date: date.text };
-}
 
 function setupForm() {
   const form = $(".contact-form");
@@ -471,14 +436,6 @@ function setupForm() {
 
   const status = $(".form-status", form);
   const submit = $(".submit", form);
-  const slate = buildSlate();
-  const today = new Intl.DateTimeFormat("de-AT", {
-    timeZone: "Europe/Vienna",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-  let takes = 1;
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -504,12 +461,6 @@ function setupForm() {
       return;
     }
 
-    slate.name.textContent = form.name.value.trim().slice(0, 40) || "OHNE TITEL";
-    slate.take.textContent = String(takes);
-    slate.date.textContent = today.format(new Date());
-    slate.slate.classList.remove("is-shut");
-    if (!slate.slate.isConnected) status.after(slate.slate);
-
     submit.disabled = true;
     status.textContent = "SENDET ...";
 
@@ -523,9 +474,8 @@ function setupForm() {
       if (!data.success) throw new Error(data.message);
 
       status.textContent = "GESENDET / Is im Kasten.";
+      status.insertAdjacentHTML("afterbegin", CLAPPER);
       status.dataset.state = "sent";
-      slate.slate.classList.add("is-shut");
-      takes += 1;
       form.reset();
     } catch {
       status.dataset.state = "error";
@@ -1299,7 +1249,7 @@ setupScroll();
 
 if (!reducedMotion) {
   try {
-    const anime = await import("https://cdn.jsdelivr.net/npm/animejs@4.0.2/+esm");
+    const anime = await import("./assets/vendor/anime.esm.min.js");
     initMotion(anime);
   } catch (error) {
     console.warn("anime.js konnte nicht geladen werden, Seite läuft ohne Animationen.", error);
