@@ -969,11 +969,7 @@ async function startDrone(stage) {
   let landed = seen ? performance.now() : -1;
   let raf = 0;
   let last = 0;
-  let lastY = window.scrollY;
-  let velocity = 0;
   let spin = 0;
-  let pitch = 0;
-  let pitchSpeed = 0;
   let shift = 0;
 
   const frame = (now) => {
@@ -981,11 +977,6 @@ async function startDrone(stage) {
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
     last = now;
     if (!dt) return;
-
-    const y = window.scrollY;
-    velocity += ((y - lastY) / dt - velocity) * (1 - Math.exp(-dt / 0.22));
-    lastY = y;
-    const drive = Math.max(-1, Math.min(1, velocity / 2200));
 
     const rect = stage.getBoundingClientRect();
     if (started < 0 && rect.top < window.innerHeight * 0.95) started = now;
@@ -1001,20 +992,17 @@ async function startDrone(stage) {
     const air = ease(flight / 1.2);
     const lift = ease(rise(rect));
 
-    const target = landed < 0 ? 0 : (44 + Math.abs(drive) * 16) * (1 + lift * 0.4);
-    spin += (target - spin) * (1 - Math.exp(-dt / 0.5));
-    blurProps(clamp((spin - 8) / 26));
+    const target = landed < 0 ? 0 : 16 + lift * 34;
+    spin += (target - spin) * (1 - Math.exp(-dt / 0.25));
+    blurProps(clamp((spin - 17) / 18));
     props.forEach((prop) => {
       prop.phase += spin * dt * prop.turn;
       prop.node.quaternion.setFromAxisAngle(prop.axis, prop.phase);
     });
 
-    const aim = -drive * 0.14 * air + lift * 0.04;
-    pitchSpeed += ((aim - pitch) * 38 - pitchSpeed * 10.5) * dt;
-    pitch += pitchSpeed * dt;
-    craft.rotation.x = pitch;
+    craft.rotation.x = lift * 0.04;
 
-    const calm = air * (1 - Math.abs(drive)) * (1 - lift);
+    const calm = air * (1 - lift);
     craft.position.y = Math.sin(flight * 1.5) * 0.005 * calm;
     craft.rotation.z = Math.sin(flight * 0.9) * 0.012 * calm;
 
@@ -1031,8 +1019,6 @@ async function startDrone(stage) {
   const sync = () => {
     cancelAnimationFrame(raf);
     last = 0;
-    lastY = window.scrollY;
-    velocity = 0;
     if (visible) raf = requestAnimationFrame(frame);
   };
 
