@@ -1426,6 +1426,9 @@ html.is-locked { overflow: hidden; }
   .hero-statement { margin-left: 0; }
   .hero-sub { margin-left: 0; }
 
+  .lightbox-prev,
+  .lightbox-next { display: none; }
+
   .vf-extra { display: none; }
   .vf-group { gap: 1em; }
 }

@@ -478,7 +478,7 @@ function setupForm() {
     month: "2-digit",
     year: "numeric",
   });
-  let takes = 0;
+  let takes = 1;
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -504,7 +504,6 @@ function setupForm() {
       return;
     }
 
-    takes += 1;
     slate.name.textContent = form.name.value.trim().slice(0, 40) || "OHNE TITEL";
     slate.take.textContent = String(takes);
     slate.date.textContent = today.format(new Date());
@@ -526,6 +525,7 @@ function setupForm() {
       status.textContent = "GESENDET / Is im Kasten.";
       status.dataset.state = "sent";
       slate.slate.classList.add("is-shut");
+      takes += 1;
       form.reset();
     } catch {
       status.dataset.state = "error";
@@ -1008,10 +1008,11 @@ async function startDrone(stage) {
     craft.position.y = Math.sin(flight * 1.5) * 0.005 * calm;
     craft.rotation.z = Math.sin(flight * 0.9) * 0.012 * calm;
 
-    const offset = lift * window.innerHeight * 0.6;
+    const offset = lift * window.innerHeight * 0.3;
     if (Math.abs(offset - shift) > 0.1) {
       shift = offset;
       canvas.style.transform = shift ? `translate3d(0, ${(-shift).toFixed(1)}px, 0)` : "";
+      canvas.style.opacity = lift > 0.55 ? (1 - ease((lift - 0.55) / 0.45)).toFixed(3) : "";
     }
 
     renderer.render(scene, camera);
@@ -1050,7 +1051,7 @@ function setupDrone() {
     startDrone(stage).catch((error) => {
       console.warn("3D-Drohne konnte nicht geladen werden, das Standbild bleibt stehen.", error);
     });
-  }, { rootMargin: `${window.innerHeight}px 0px` });
+  }, { rootMargin: `${Math.min(window.innerHeight, 900)}px 0px` });
   near.observe(stage);
 }
 
@@ -1244,6 +1245,7 @@ function setupLightbox() {
   let startY = 0;
   let swiping = false;
   dialog.addEventListener("pointerdown", (event) => {
+    delete dialog.dataset.swiped;
     if (event.pointerType === "mouse") return;
     swiping = true;
     startX = event.clientX;
@@ -1257,6 +1259,7 @@ function setupLightbox() {
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
       show(current + (dx < 0 ? 1 : -1));
       dialog.dataset.swiped = "1";
+      setTimeout(() => delete dialog.dataset.swiped, 400);
     }
   });
   dialog.addEventListener("pointercancel", () => {
