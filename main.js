@@ -420,15 +420,50 @@ function setupEmailCheck() {
   };
 }
 
-const CLAPPER =
-  '<svg class="clapper" viewBox="0 0 34 28" aria-hidden="true" focusable="false">' +
-  '<rect class="clapper-board" x="2" y="12.5" width="30" height="13.5" rx="1.2"/>' +
-  '<path class="clapper-rule" d="M6 18.5h22M6 22h13"/>' +
-  '<g class="clapper-base"><rect x="2" y="8.5" width="30" height="4"/>' +
-  '<path d="M9 8.5l-3 4M17 8.5l-3 4M25 8.5l-3 4"/></g>' +
-  '<g class="clapper-arm"><rect x="2" y="4.5" width="30" height="4"/>' +
-  '<path d="M6 4.5l3 4M14 4.5l3 4M22 4.5l3 4"/></g>' +
+const SLATE_ARM =
+  '<svg class="slate-arm" viewBox="0 0 220 22" preserveAspectRatio="none" focusable="false">' +
+  '<rect x="0" y="0" width="220" height="22"/>' +
+  '<path d="M18 0h20l-14 22H4zM62 0h20l-14 22H48zM106 0h20l-14 22H92zM150 0h20l-14 22h-20zM194 0h20l-14 22h-20z"/>' +
   "</svg>";
+
+function buildSlate() {
+  const slate = document.createElement("div");
+  slate.className = "slate";
+  slate.setAttribute("aria-hidden", "true");
+  slate.insertAdjacentHTML("afterbegin", SLATE_ARM);
+
+  const board = document.createElement("div");
+  board.className = "slate-board";
+  const row = (...cells) => {
+    const line = document.createElement("div");
+    line.className = "slate-row";
+    cells.forEach((cell) => line.appendChild(cell));
+    board.appendChild(line);
+    return line;
+  };
+  const cell = (label, value) => {
+    const box = document.createElement("span");
+    box.className = "slate-cell";
+    const key = document.createElement("span");
+    key.className = "slate-key";
+    key.textContent = label;
+    const text = document.createElement("span");
+    text.className = "slate-value";
+    text.textContent = value;
+    box.append(key, text);
+    return { box, text };
+  };
+
+  const prod = cell("PROD", "");
+  const scene = cell("SZENE", "05");
+  const take = cell("TAKE", "1");
+  const date = cell("DATUM", "");
+  row(prod.box).classList.add("slate-row--wide");
+  row(scene.box, take.box, date.box);
+  slate.appendChild(board);
+
+  return { slate, name: prod.text, take: take.text, date: date.text };
+}
 
 function setupForm() {
   const form = $(".contact-form");
@@ -436,6 +471,14 @@ function setupForm() {
 
   const status = $(".form-status", form);
   const submit = $(".submit", form);
+  const slate = buildSlate();
+  const today = new Intl.DateTimeFormat("de-AT", {
+    timeZone: "Europe/Vienna",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  let takes = 0;
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -461,6 +504,13 @@ function setupForm() {
       return;
     }
 
+    takes += 1;
+    slate.name.textContent = form.name.value.trim().slice(0, 40) || "OHNE TITEL";
+    slate.take.textContent = String(takes);
+    slate.date.textContent = today.format(new Date());
+    slate.slate.classList.remove("is-shut");
+    if (!slate.slate.isConnected) status.after(slate.slate);
+
     submit.disabled = true;
     status.textContent = "SENDET ...";
 
@@ -474,8 +524,8 @@ function setupForm() {
       if (!data.success) throw new Error(data.message);
 
       status.textContent = "GESENDET / Is im Kasten.";
-      status.insertAdjacentHTML("afterbegin", CLAPPER);
       status.dataset.state = "sent";
+      slate.slate.classList.add("is-shut");
       form.reset();
     } catch {
       status.dataset.state = "error";
@@ -1004,13 +1054,240 @@ function setupDrone() {
   near.observe(stage);
 }
 
+function sunIsUp(date = new Date()) {
+  const rad = Math.PI / 180;
+  const lat = 48.23 * rad;
+  const lon = 15.33;
+  const days = date.getTime() / 86400000 - 10957.5;
+  const anomaly = (357.529 + 0.98560028 * days) * rad;
+  const meanLon = 280.459 + 0.98564736 * days;
+  const eclLon = (meanLon + 1.915 * Math.sin(anomaly) + 0.02 * Math.sin(2 * anomaly)) * rad;
+  const tilt = (23.439 - 0.00000036 * days) * rad;
+  const ascension = Math.atan2(Math.cos(tilt) * Math.sin(eclLon), Math.cos(eclLon));
+  const declination = Math.asin(Math.sin(tilt) * Math.sin(eclLon));
+  const sidereal = (18.697374558 + 24.06570982441908 * days) * 15;
+  const hourAngle = (sidereal + lon) * rad - ascension;
+  const altitude = Math.asin(
+    Math.sin(lat) * Math.sin(declination) + Math.cos(lat) * Math.cos(declination) * Math.cos(hourAngle),
+  );
+  return altitude / rad > -0.833;
+}
+
+function setupDaytime() {
+  const head = $("#start .scene-head");
+  const slug = head && $(".slug", head);
+  if (!slug || sunIsUp()) return;
+  slug.textContent = slug.textContent.replace(/TAG$/, "NACHT");
+  head.dataset.time = "nacht";
+}
+
+function setupCounter() {
+  const number = $(".about-number");
+  if (!number || reducedMotion || !("IntersectionObserver" in window)) return;
+  const digits = number.textContent.trim().split("");
+  if (!digits.length || !digits.every((digit) => /\d/.test(digit))) return;
+
+  number.textContent = "";
+  number.classList.add("is-counter");
+  const reels = digits.map((digit, index) => {
+    const steps = (index + 1) * 10 + Number(digit);
+    const reel = document.createElement("span");
+    reel.className = "counter-reel";
+    const strip = document.createElement("span");
+    strip.className = "counter-strip";
+    for (let n = 0; n <= steps; n += 1) {
+      const face = document.createElement("span");
+      face.textContent = String(n % 10);
+      strip.appendChild(face);
+    }
+    reel.appendChild(strip);
+    number.appendChild(reel);
+    return { reel, strip, steps, digit, duration: index === digits.length - 1 ? 850 : 700 };
+  });
+
+  const measure = () => {
+    const size = parseFloat(getComputedStyle(number).fontSize) || 1;
+    reels.forEach(({ reel, digit }) => {
+      const probe = document.createElement("span");
+      probe.className = "counter-probe";
+      probe.textContent = digit;
+      number.appendChild(probe);
+      reel.style.width = `${(probe.getBoundingClientRect().width / size).toFixed(3)}em`;
+      probe.remove();
+    });
+  };
+  measure();
+  document.fonts?.ready.then(measure);
+
+  const roll = () => {
+    reels.forEach(({ strip, steps, duration }) => {
+      const end = `translateY(${-steps}em)`;
+      strip.animate(
+        [
+          { transform: "translateY(0)", easing: "cubic-bezier(0.45, 0, 0.25, 1)" },
+          { transform: `translateY(${-(steps + 0.08)}em)`, offset: 0.88, easing: "ease-out" },
+          { transform: end },
+        ],
+        { duration, fill: "forwards" },
+      );
+      strip.style.transform = end;
+    });
+  };
+
+  const watch = new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    watch.disconnect();
+    roll();
+  }, { threshold: 0.3 });
+  watch.observe(number);
+}
+
+const LIGHTBOX =
+  '<dialog class="lightbox" aria-label="Großansicht">' +
+  '<figure class="lightbox-figure">' +
+  '<img class="lightbox-img" alt="">' +
+  '<figcaption class="lightbox-caption"><span class="lightbox-count"></span><span class="lightbox-alt"></span></figcaption>' +
+  "</figure>" +
+  '<button class="lightbox-btn lightbox-close" type="button">SCHLIESSEN</button>' +
+  '<button class="lightbox-btn lightbox-prev" type="button" aria-label="Vorheriges Foto">&larr;</button>' +
+  '<button class="lightbox-btn lightbox-next" type="button" aria-label="Nächstes Foto">&rarr;</button>' +
+  "</dialog>";
+
+function largestSource(link) {
+  const source = $("source", link);
+  const best = (source?.getAttribute("srcset") || "")
+    .split(",")
+    .map((entry) => entry.trim().split(/\s+/))
+    .filter(([url, width]) => url && width)
+    .sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))[0];
+  return best ? best[0] : link.getAttribute("href");
+}
+
+function setupLightbox() {
+  const links = $$(".gallery-link");
+  if (!links.length || !("HTMLDialogElement" in window)) return;
+
+  document.body.insertAdjacentHTML("beforeend", LIGHTBOX);
+  const dialog = $(".lightbox");
+  const img = $(".lightbox-img", dialog);
+  const count = $(".lightbox-count", dialog);
+  const caption = $(".lightbox-alt", dialog);
+  const pad = (n) => String(n).padStart(2, "0");
+  const photos = links.map((link) => ({ link, src: largestSource(link), alt: $("img", link)?.alt || "" }));
+  let current = 0;
+  let opener = null;
+
+  const preload = (index) => {
+    const photo = photos[(index + photos.length) % photos.length];
+    const probe = new Image();
+    probe.src = photo.src;
+  };
+
+  const show = (index) => {
+    current = (index + photos.length) % photos.length;
+    const photo = photos[current];
+    count.textContent = `${pad(current + 1)} / ${pad(photos.length)}`;
+    caption.textContent = photo.alt;
+    img.alt = photo.alt;
+    if (img.getAttribute("src") !== photo.src) {
+      dialog.classList.add("is-loading");
+      img.src = photo.src;
+    }
+    preload(current + 1);
+    preload(current - 1);
+  };
+
+  img.addEventListener("load", () => dialog.classList.remove("is-loading"));
+  img.addEventListener("error", () => dialog.classList.remove("is-loading"));
+
+  const open = (index, link) => {
+    opener = link;
+    show(index);
+    dialog.showModal();
+    document.documentElement.classList.add("is-locked");
+    history.pushState({ lightbox: true }, "");
+  };
+
+  const requestClose = () => {
+    if (history.state?.lightbox) history.back();
+    else if (dialog.open) dialog.close();
+  };
+
+  window.addEventListener("popstate", () => {
+    if (dialog.open) dialog.close();
+  });
+
+  dialog.addEventListener("close", () => {
+    document.documentElement.classList.remove("is-locked");
+    if (history.state?.lightbox) history.back();
+    opener?.focus();
+  });
+
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    requestClose();
+  });
+
+  dialog.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowRight") show(current + 1);
+    if (event.key === "ArrowLeft") show(current - 1);
+  });
+
+  dialog.addEventListener("click", (event) => {
+    if (event.target.closest(".lightbox-close")) requestClose();
+    else if (event.target.closest(".lightbox-next")) show(current + 1);
+    else if (event.target.closest(".lightbox-prev")) show(current - 1);
+    else if (!event.target.closest(".lightbox-img")) requestClose();
+  });
+
+  let startX = 0;
+  let startY = 0;
+  let swiping = false;
+  dialog.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse") return;
+    swiping = true;
+    startX = event.clientX;
+    startY = event.clientY;
+  });
+  dialog.addEventListener("pointerup", (event) => {
+    if (!swiping) return;
+    swiping = false;
+    const dx = event.clientX - startX;
+    const dy = event.clientY - startY;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      show(current + (dx < 0 ? 1 : -1));
+      dialog.dataset.swiped = "1";
+    }
+  });
+  dialog.addEventListener("pointercancel", () => {
+    swiping = false;
+  });
+  dialog.addEventListener("click", (event) => {
+    if (dialog.dataset.swiped) {
+      delete dialog.dataset.swiped;
+      event.stopImmediatePropagation();
+    }
+  }, { capture: true });
+
+  links.forEach((link, index) => {
+    link.addEventListener("click", (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+      event.preventDefault();
+      open(index, link);
+    });
+  });
+}
+
 setupAge();
+setupDaytime();
+setupCounter();
 setupProgress();
 setupViewfinder();
 setupReel();
 setupBurger();
 setupEmbeds();
 setupGallery();
+setupLightbox();
 setupEmailCheck();
 setupForm();
 setupHeroVideo();
