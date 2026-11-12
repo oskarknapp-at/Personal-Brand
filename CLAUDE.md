@@ -307,7 +307,13 @@ der rechten Seite gespiegelt, weil die Quelle dort nicht exakt symmetrisch ist.
 
 **Aufbau des GLB (Namen werden in `startDrone()` ausgewertet):** `Drohne` → `Rumpf` und vier Gelenke
 `Arm_FR`, `Arm_FL`, `Arm_RR`, `Arm_RL` (F vorne, R hinten, dann rechts/links) → je `Prop_xx` →
-zwei `Blatt_xx_n`. Gelenke sind leere Knoten mit `extras`: `fold_axis` + `fold_angle` (Radiant,
+zwei `Blatt_xx_n` und `Nabe_xx_Netz`. **Die Nabe dreht mit (seit 12.11., Betreiber-Hinweis):** An
+der echten Mavic 3 sitzen die Blätter auf einer Schnellwechsel-Nabe, die per Drücken und Drehen auf
+den Motor gesteckt wird und mit ihm rotiert. `build.py` hängt deshalb jedes Teil, dessen
+Schwerpunkt weniger als 0,5 mm neben der Propellerachse liegt und das höchstens 22 mm unter der
+Nabenmitte beginnt, an `Prop_xx`: Blatthalterung mit den drei Stiften (schwarz wie die Blätter),
+Grundplatte, zwei Ringe, Motorglocke und Welle. Das eigentliche Motorgehäuse liegt 2,1 mm neben
+der Achse und bleibt am Arm. Gelenke sind leere Knoten mit `extras`: `fold_axis` + `fold_angle` (Radiant,
 Faltung von aufgeklappt nach zusammengeklappt) bzw. `spin_axis`. Die Netze hängen als Kinder
 darunter. **Das ist nötig**, weil die meshopt-Quantisierung den Ursprung von Blatt-Knoten mit Netz
 verschiebt und die Gelenkpunkte sonst verloren gehen. Koordinaten: Y oben, Vorderseite Richtung
@@ -341,7 +347,7 @@ Ordner **außerhalb** des Repos, `drohne-entry.js` dorthin kopieren). Das Bünde
 `WebGLRenderer`, `Scene`, `Group`, `PerspectiveCamera`, `HemisphereLight`, `DirectionalLight`,
 `Vector3`, `GLTFLoader` und `MeshoptDecoder`.
 
-**Größen:** GLB 563 KB (Budget 800), three.js-Bündel 648 KB roh, 163 KB gzip (Budget 200).
+**Größen:** GLB 597 KB (Budget 800), three.js-Bündel 648 KB roh, 163 KB gzip (Budget 200).
 
 **Kommentar-Regel und Vendor-Datei:** `assets/vendor/three-drohne.min.js` behält den
 Copyright-Hinweis von three.js (MIT verlangt ihn). Die Regel „kein Kommentar" gilt für die fünf
@@ -492,7 +498,8 @@ nur die sichtbare Seite).
   CSS + JS zusammen 15,2 KB → 21,0 KB (gzip). Erstaufbau ohne Video im Prüfer-Lauf +25,7 KB,
   davon 20,6 KB Drohnen-Standbild (s. „Code-Notizen").
 - **Unabhängiger Prüfer (12.11.2026):** alle 13 Ziel-Kriterien und die Design-Regeln geprüft, kein
-  Blocker. Behoben danach: Sprung Standbild → 3D, Leerlauf der Schleife vor dem Ausklappen,
+  Blocker. Danach Betreiber-Hinweis umgesetzt: die Propeller-Nabe dreht jetzt mit (s. „3D-Drohne").
+  Behoben danach: Sprung Standbild → 3D, Leerlauf der Schleife vor dem Ausklappen,
   1200er-Standbild fürs Handy, Einrückung bei „124 km" entfernt, Sucher-Schrift kräftiger
   abgesetzt. Bewusst gelassen: Schweben und Leerlauf-Propeller im Stillstand (Auftrag), roter
   Filmstreifen an der Kamera (Auftrag: Strichzeichnung in Rot und Ink).
