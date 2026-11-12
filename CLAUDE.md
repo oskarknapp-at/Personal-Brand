@@ -114,7 +114,7 @@ in `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), 
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.8` (V3.8 / `v=3.8`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.9` (V3.9 / `v=3.9`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -305,20 +305,25 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   und die Amplitude schaltete bei 600 ms hart von 0 auf 1. Die Höhe setzte so mit
   `sin(0,6 s × 1,5) × 5 mm` = 3,9 mm auf einmal ein. Jetzt startet die Uhr am Ende des Ausklappens
   bei 0 und die Amplitude blendet über 1,2 s ein (größter Schritt 0,2 mm pro Frame).
-- **Drohnen-Szene, Propeller-Unschärfe (seit V3.8, Betreiber-Wunsch):** Nach dem Ausklappen
-  laufen die Propeller in rund 0,5 s auf 44 rad/s hoch (vorher Leerlauf 6 rad/s), damit man keine
+- **Drohnen-Szene, Drehzahl (seit V3.9, Betreiber-Entscheidung):** Nach dem Ausklappen laufen die
+  Propeller auf **Standgas** hoch, 16 rad/s (rund 2,5 Umdrehungen pro Sekunde), die Blätter bleiben
+  sichtbar. **Schnell und unscharf werden sie nur beim Abheben**, gekoppelt an `lift`: Ziel
+  16 + 34 × `lift` rad/s, Glättung 0,25 s. Die **Scroll-Geschwindigkeit wirkt auf nichts mehr**,
+  weder auf die Drehzahl noch auf die Neigung („bringt gar nichts", die Drohne bleibt beim Scrollen
+  ja sichtbar). V3.8 hatte die Propeller dauerhaft schnell, das war falsch verstanden.
+- **Drohnen-Szene, Propeller-Unschärfe (seit V3.8):** Ziel war, dass man bei hoher Drehzahl keine
   einzelnen Blätter mehr erkennt. **Nur schneller drehen reicht nicht:** Bei 60 Bildern pro Sekunde
   springt ein Blatt pro Bild weit weiter, das flackert oder scheint rückwärts zu laufen. Deshalb
   bekommt jeder Propeller beim Laden 8 konzentrische `RingGeometry`-Scheiben in Propellerfarbe
   (`MeshBasicMaterial`, transparent, ohne Tiefenschreiben), Radius und Höhe aus den Blatt-Vertices
-  berechnet. Je nach Drehzahl blenden die Scheiben ein (innen 0,2, außen bis 0,04 Deckkraft, also
+  berechnet. Je nach Drehzahl (ab 17 rad/s, voll ab 35 rad/s) blenden die Scheiben ein (innen 0,2, außen bis 0,04 Deckkraft, also
   ein weicher Rand) und die echten Blätter auf 5 % aus. Ein erster Versuch mit 6 versetzten
   Blatt-Kopien sah wie ein Stern aus und wurde verworfen. Gemessen am Handy weiter 60 fps.
 - **Drohnen-Szene, Abheben (seit V3.6):** `lift` hängt nur an der Scroll-Position (ab Bühnenmitte
   über 40 % der Fensterhöhe bis Unterkante am oberen Rand), also umkehrbar. Verschoben wird das ganze
   transparente Canvas per `translate3d` um bis zu 30 % der Fensterhöhe, deshalb gibt es keine
   Canvas-Kante. Ab 55 % `lift` blendet es aus, damit die Drohne nicht hart unter die deckende Nav
-  rutscht. Propeller drehen dabei bis zu 60 % schneller.
+  rutscht. Die Nase hebt sich dabei um höchstens 0,04 rad, Propeller s. „Drehzahl".
 - **Drohnen-Szene, Bewegung (Stand V3.5):** Ausklappen damals einmalig in 600 ms ab 45 % Sichtbarkeit. Danach Propeller mit
   Leerlauf-Drehzahl, Drehzahl und Neigung (max. rund 8°) folgen der geglätteten
   Scroll-Geschwindigkeit, im Stillstand leichtes Schweben. **Die Render-Schleife läuft nur, solange
@@ -432,6 +437,8 @@ Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Fo
 nur die sichtbare Seite).
 
 ### Aktueller Stand (Stand 2026-11-12)
+- **V3.9 (live seit 2026-11-12):** Propeller im Standgas, schnell und unscharf nur beim Abheben,
+  keine Reaktion mehr auf die Scroll-Geschwindigkeit (weder Drehzahl noch Neigung).
 - **V3.8 (live seit 2026-11-12):** Nach dem iPhone-Test des Betreibers („Drohne läuft flüssig"):
   Propeller drehen nach dem Ausklappen schnell mit Unschärfe-Scheiben, Bildzählwerk langsamer.
 - **V3.7 (live seit 2026-11-12):** Klappe wieder wie in V3.5 (klein, in der Statuszeile, nach dem
@@ -444,14 +451,14 @@ nur die sichtbare Seite).
   Scroll-Fortschritt (Desktop), Klappe im Kontaktformular, neue Szene 03 Drohne mit 3D-Modell.
   Details unter „Code-Notizen" und „3D-Drohne". Sicherungspunkt vor dem Umbau: Git-Tag
   `vor-animationen` (auf `5501cac`, auch auf GitHub).
-- **Live-Version:** **V3.8** (`v=3.8`, s. o.). **Versionsschema seit V3.0:
+- **Live-Version:** **V3.9** (`v=3.9`, s. o.). **Versionsschema seit V3.0:
   Schritte von 0.1** (V2.9 → V3.0 → V3.1 …), s. „Konventionen". (Ablauf: … → V2.9 =
   E-Mail-Live-Prüfung → V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig →
   V3.2 = Papierton fast weiß → V3.3 = Untertitel aus → V3.4 = Projekte-Szene ausgebaut →
   V3.5 = Bewegung: Sucher-Overlay, Filmkamera, Drohnen-Szene, Klappe → V3.6 = Drohnen-Fix,
   Drohne am Handy, Abheben, Showreel klein, Slug-Tageszeit, Zählwerk, Klappe, Großansicht →
   V3.7 = Klappe zurück auf V3.5, anime.js selbst gehostet → V3.8 = Propeller-Unschärfe,
-  Zählwerk langsamer.)
+  Zählwerk langsamer → V3.9 = Standgas, schnell nur beim Abheben.)
 - **⚠️ Projekte-Szene ist ausgebaut (seit V3.4, Datenschutz):** Die zwei Kurzfilme („Was kommt
   danach?" / Postcard-Challenge und ALLEIN) sind **nicht** auf der Seite, solange die
   Datenschutzvereinbarungen mit den beteiligten Personen nicht unterschrieben sind. Der komplette
@@ -611,6 +618,12 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-11-12 — Standgas, schnell nur beim Abheben (V3.9):** Betreiber: In V3.8 drehten die
+  Propeller immer schnell, gewollt war Standgas und schnell nur beim Rausfliegen. Dass die Drehzahl
+  am Scroll-Tempo hängt, „bringt gar nichts". Auf Rückfrage entschieden: Standgas etwas schneller
+  als V3.7 (16 statt 6 rad/s), Drehzahl und Unschärfe wachsen mit dem Abheben, Neigung durch das
+  Scroll-Tempo ganz weg. Gemessen: Standgas 16 rad/s ohne Unschärfe, beim Abheben bis 48 rad/s mit
+  voller Unschärfe, zurück in der Szene wieder 16. Version 3.8 → 3.9.
 - **2026-11-12 — Propeller-Unschärfe, Zählwerk langsamer (V3.8):** Betreiber hat am iPhone getestet,
   die Drohne läuft flüssig. Wünsche: Propeller nach dem Start so schnell, dass man keine einzelnen
   Blätter mehr erkennt, und das Zählwerk etwas langsamer. Umsetzung s. „Code-Notizen"
