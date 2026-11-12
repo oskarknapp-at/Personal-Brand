@@ -470,12 +470,23 @@ nur die sichtbare Seite).
   Februar 2026 → `2026-02-01`). Tag `01` ist Konvention. Bei Gelegenheit den echten Tag aus
   YouTube Studio („Veröffentlicht am …") eintragen, Format `JJJJ-MM-TT`. Kein Blocker mehr — die
   kritische Search-Console-Meldung ist behoben.
-- **DNS (nicht im Repo, Betreiber-Seite) — Ursache der „Seite mit Weiterleitung"-Meldung:** Doppelter
-  `www`-CNAME. Behalten: `www` → `oskar-knapp.github.io.` Löschen: `www` → `okmedia.at.` (zwei CNAMEs
-  auf einem Host = ungültig). Der Repo-Inhalt erzeugt keine Weiterleitung (Canonical/Sitemap/interne
-  Links alle auf `https://okmedia.at/` mit Trailing-Slash); die Search-Console-Meldung betrifft die
-  DNS-Ebene bzw. den normalen, erwarteten Redirect nicht-kanonischer Varianten (www→apex, http→https,
-  github.io→okmedia.at) und ist meist rein informativ.
+- **Domain-Einstellung GitHub Pages: erledigt am 2026-11-12, Ursache der „Seite mit
+  Weiterleitung"-Meldung gefunden.** In den Pages-Einstellungen stand `www.okmedia.at` als Custom
+  Domain, HTTPS war nicht erzwungen. Folge: `https://okmedia.at/` leitete per 301 auf
+  `https://www.okmedia.at/` um, obwohl Canonical, `og:url`, Sitemap, `CNAME`-Datei und Schema.org
+  alle auf `https://okmedia.at/` zeigen. Google bekam damit für jede kanonische Adresse eine
+  Weiterleitung. Umgestellt per API (`gh api -X PUT repos/oskarknapp-at/Personal-Brand/pages
+  -f cname=okmedia.at` und `-F https_enforced=true`). Jetzt: `okmedia.at` antwortet direkt mit 200,
+  `www` und `http://` leiten auf `https://okmedia.at/` um. **Wichtig:** Bei Deploy per Workflow
+  (`build_type: workflow`) zählt nur die Einstellung in GitHub, die `CNAME`-Datei im Repo wird
+  ignoriert. Wer die Domain ändert, muss beides gleich halten.
+  **Noch offen (Betreiber):** In der Search Console für `https://okmedia.at/` die URL-Prüfung
+  laufen lassen und bei der Meldung „Seite mit Weiterleitung" die Validierung starten.
+  **DNS (Stand 2026-11-12, per `dig`):** Apex hat die vier GitHub-A-Records, `www` hat **einen**
+  CNAME auf `oskar-knapp.github.io.` (der frühere doppelte CNAME ist weg). Der zeigt noch auf den
+  **alten** Account, das Repo liegt unter `oskarknapp-at`. Funktioniert trotzdem, weil GitHub nach
+  Hostname zuordnet, sauberer wäre `oskarknapp-at.github.io.` (beim Registrar ändern, beim
+  Domain-Umzug auf oskarknapp.at ohnehin fällig).
 - **Horizontaler Überlauf bei genau 320 px (klein, kosmetisch):** Bei 320 px Viewport ist
   `document.scrollWidth` 343 px, die Seite lässt sich also ~23 px seitlich schieben. Ursache ist der
   Hero-Schriftzug `.hero-name` (`font-stretch: 125%` macht die Glyphen breiter, als die
