@@ -869,6 +869,65 @@ async function startDrone(stage) {
     }
   });
 
+  gltf.scene.updateMatrixWorld(true);
+  const solid = new Map();
+  const discs = [];
+  const point = new T.Vector3();
+  props.forEach((prop) => {
+    const own = blades.filter((blade) => blade.node.parent === prop.node);
+    const local = prop.node.matrixWorld.clone().invert();
+    let reach = 0;
+    let height = 0;
+    let count = 0;
+    own.forEach((blade) => blade.node.traverse((mesh) => {
+      if (!mesh.material) return;
+      if (!solid.has(mesh.material)) {
+        const copy = mesh.material.clone();
+        copy.transparent = true;
+        solid.set(mesh.material, copy);
+      }
+      mesh.material = solid.get(mesh.material);
+      const position = mesh.geometry.attributes.position;
+      for (let i = 0; i < position.count; i += 1) {
+        point.fromBufferAttribute(position, i).applyMatrix4(mesh.matrixWorld).applyMatrix4(local);
+        const along = point.dot(prop.axis);
+        reach = Math.max(reach, point.addScaledVector(prop.axis, -along).length());
+        height += along;
+        count += 1;
+      }
+    }));
+    if (!count) return;
+    const stops = [0.05, 0.22, 0.4, 0.56, 0.7, 0.82, 0.91, 0.97, 1];
+    const shades = [0.2, 0.21, 0.2, 0.18, 0.15, 0.12, 0.08, 0.04];
+    shades.forEach((strength, index) => {
+      const [from, to] = [stops[index], stops[index + 1]];
+      const material = new T.MeshBasicMaterial({
+        color: 0x151617,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        side: T.DoubleSide,
+      });
+      const disc = new T.Mesh(new T.RingGeometry(reach * from, reach * to, 72), material);
+      disc.quaternion.setFromUnitVectors(new T.Vector3(0, 0, 1), prop.axis);
+      disc.position.copy(prop.axis).multiplyScalar(height / count);
+      disc.visible = false;
+      prop.node.add(disc);
+      discs.push({ disc, strength });
+    });
+  });
+  let shownBlur = -1;
+  const blurProps = (amount) => {
+    const blur = Math.round(amount * 100) / 100;
+    if (blur === shownBlur) return;
+    shownBlur = blur;
+    solid.forEach((material) => { material.opacity = 1 - blur * 0.95; });
+    discs.forEach(({ disc, strength }) => {
+      disc.material.opacity = blur * strength;
+      disc.visible = blur > 0;
+    });
+  };
+
   const UNFOLD_MS = 900;
   const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? 4 * x * x * x : 1 - (2 - 2 * x) ** 3 / 2);
   const span = (progress, from, to) => ease((progress * UNFOLD_MS - from) / (to - from));
@@ -942,8 +1001,9 @@ async function startDrone(stage) {
     const air = ease(flight / 1.2);
     const lift = ease(rise(rect));
 
-    const target = landed < 0 ? 0 : (6 + Math.abs(drive) * 30) * (1 + lift * 0.6);
-    spin += (target - spin) * (1 - Math.exp(-dt / 0.45));
+    const target = landed < 0 ? 0 : (44 + Math.abs(drive) * 16) * (1 + lift * 0.4);
+    spin += (target - spin) * (1 - Math.exp(-dt / 0.5));
+    blurProps(clamp((spin - 8) / 26));
     props.forEach((prop) => {
       prop.phase += spin * dt * prop.turn;
       prop.node.quaternion.setFromAxisAngle(prop.axis, prop.phase);
@@ -1053,7 +1113,7 @@ function setupCounter() {
     }
     reel.appendChild(strip);
     number.appendChild(reel);
-    return { reel, strip, steps, digit, duration: index === digits.length - 1 ? 850 : 700 };
+    return { reel, strip, steps, digit, duration: index === digits.length - 1 ? 1300 : 1050 };
   });
 
   const measure = () => {

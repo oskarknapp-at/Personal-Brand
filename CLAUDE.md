@@ -26,7 +26,7 @@ Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS
   einmalig gebautes Bündel (s. „3D-Drohne"). Es wird **nur** von `setupDrone()` nachgeladen, nie
   beim Seitenaufbau, nie bei `prefers-reduced-motion` oder `saveData`. Seit V3.6 auch am Handy.
 - **Alle Animationen ≤ 600 ms.** **Ausnahmen seit V3.6 (Betreiber-Wunsch):** Ausklappen der Drohne
-  900 ms, Bildzählwerk im About 700 bzw. 850 ms. Die Großansicht blendet in 250 ms über.
+  900 ms, Bildzählwerk im About 1050 bzw. 1300 ms (seit V3.8, vorher 700/850). Die Großansicht blendet in 250 ms über.
 - **⚠️ KEIN KOMMENTAR IM AUSGELIEFERTEN CODE (PFLICHT):** `index.html`, `impressum/index.html`,
   `datenschutz/index.html`, `main.js`, `style.css` bleiben **komplett kommentarfrei** — kein
   `<!-- … -->`, kein `/* … */`, kein `//`. **Jede** Erklärung, Begründung oder Notiz gehört in
@@ -114,7 +114,7 @@ in `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), 
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.7` (V3.7 / `v=3.7`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.8` (V3.8 / `v=3.8`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -251,7 +251,8 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   weltweit gleich ist, stimmt das ohne Zeitzonen-Rechnung für Europe/Vienna, auch für Besucher in
   anderen Zeitzonen. Gemessen am 12.11.: auf 07:01, unter 16:25. Ohne JS bleibt `TAG`.
 - **Bildzählwerk (`setupCounter`):** je Ziffer eine Rolle (`.counter-reel`, `overflow-y: clip`),
-  Zehner eine Umdrehung in 700 ms, Einer zwei Umdrehungen in 850 ms, Web Animations API mit kleinem
+  Zehner eine Umdrehung in 1050 ms, Einer zwei Umdrehungen in 1300 ms (seit V3.8, Betreiber fand
+  700/850 zu schnell), Web Animations API mit kleinem
   Überschwingen am Ende. Die Breite jeder Rolle wird auf die Breite der **Endziffer** gemessen, und
   zwar erneut nach `document.fonts.ready` (vor dem Laden der Schrift misst man die Ersatzschrift,
   am Handy lag die Zahl dann 42 px daneben). Die Zahl ist `aria-hidden`, der echte Wert steht im
@@ -304,6 +305,15 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   und die Amplitude schaltete bei 600 ms hart von 0 auf 1. Die Höhe setzte so mit
   `sin(0,6 s × 1,5) × 5 mm` = 3,9 mm auf einmal ein. Jetzt startet die Uhr am Ende des Ausklappens
   bei 0 und die Amplitude blendet über 1,2 s ein (größter Schritt 0,2 mm pro Frame).
+- **Drohnen-Szene, Propeller-Unschärfe (seit V3.8, Betreiber-Wunsch):** Nach dem Ausklappen
+  laufen die Propeller in rund 0,5 s auf 44 rad/s hoch (vorher Leerlauf 6 rad/s), damit man keine
+  einzelnen Blätter mehr erkennt. **Nur schneller drehen reicht nicht:** Bei 60 Bildern pro Sekunde
+  springt ein Blatt pro Bild weit weiter, das flackert oder scheint rückwärts zu laufen. Deshalb
+  bekommt jeder Propeller beim Laden 8 konzentrische `RingGeometry`-Scheiben in Propellerfarbe
+  (`MeshBasicMaterial`, transparent, ohne Tiefenschreiben), Radius und Höhe aus den Blatt-Vertices
+  berechnet. Je nach Drehzahl blenden die Scheiben ein (innen 0,2, außen bis 0,04 Deckkraft, also
+  ein weicher Rand) und die echten Blätter auf 5 % aus. Ein erster Versuch mit 6 versetzten
+  Blatt-Kopien sah wie ein Stern aus und wurde verworfen. Gemessen am Handy weiter 60 fps.
 - **Drohnen-Szene, Abheben (seit V3.6):** `lift` hängt nur an der Scroll-Position (ab Bühnenmitte
   über 40 % der Fensterhöhe bis Unterkante am oberen Rand), also umkehrbar. Verschoben wird das ganze
   transparente Canvas per `translate3d` um bis zu 30 % der Fensterhöhe, deshalb gibt es keine
@@ -402,9 +412,10 @@ npx esbuild $W/drohne-entry.js --bundle --minify --format=esm --target=es2020 \
 plus `drohne.blend`. Für esbuild muss `three` installiert sein (`npm i three esbuild` in einem
 Ordner **außerhalb** des Repos, `drohne-entry.js` dorthin kopieren). Das Bündel enthält nur
 `WebGLRenderer`, `Scene`, `Group`, `PerspectiveCamera`, `HemisphereLight`, `DirectionalLight`,
-`Vector3`, `GLTFLoader` und `MeshoptDecoder`.
+`Vector3`, `Mesh`, `RingGeometry`, `MeshBasicMaterial`, `DoubleSide` (die vier letzten seit V3.8 für
+die Propeller-Unschärfe), `GLTFLoader` und `MeshoptDecoder`.
 
-**Größen:** GLB 597 KB (Budget 800), three.js-Bündel 648 KB roh, 163 KB gzip (Budget 200).
+**Größen:** GLB 597 KB (Budget 800), three.js-Bündel 649 KB roh, 164 KB gzip (Budget 200).
 
 **Kommentar-Regel und Vendor-Dateien:** `assets/vendor/three-drohne.min.js` und
 `assets/vendor/anime.esm.min.js` behalten ihre Copyright-Hinweise (MIT verlangt sie). Die Regel
@@ -421,6 +432,8 @@ Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Fo
 nur die sichtbare Seite).
 
 ### Aktueller Stand (Stand 2026-11-12)
+- **V3.8 (live seit 2026-11-12):** Nach dem iPhone-Test des Betreibers („Drohne läuft flüssig"):
+  Propeller drehen nach dem Ausklappen schnell mit Unschärfe-Scheiben, Bildzählwerk langsamer.
 - **V3.7 (live seit 2026-11-12):** Klappe wieder wie in V3.5 (klein, in der Statuszeile, nach dem
   Senden), anime.js selbst gehostet. Beim Seitenaufbau gibt es damit keinen externen Request mehr.
 - **V3.6 (live seit 2026-11-12, Squash-Merge von `feature/v3.6`):** Drohnen-Fix (kein Sprung,
@@ -431,13 +444,14 @@ nur die sichtbare Seite).
   Scroll-Fortschritt (Desktop), Klappe im Kontaktformular, neue Szene 03 Drohne mit 3D-Modell.
   Details unter „Code-Notizen" und „3D-Drohne". Sicherungspunkt vor dem Umbau: Git-Tag
   `vor-animationen` (auf `5501cac`, auch auf GitHub).
-- **Live-Version:** **V3.7** (`v=3.7`, s. o.). **Versionsschema seit V3.0:
+- **Live-Version:** **V3.8** (`v=3.8`, s. o.). **Versionsschema seit V3.0:
   Schritte von 0.1** (V2.9 → V3.0 → V3.1 …), s. „Konventionen". (Ablauf: … → V2.9 =
   E-Mail-Live-Prüfung → V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig →
   V3.2 = Papierton fast weiß → V3.3 = Untertitel aus → V3.4 = Projekte-Szene ausgebaut →
   V3.5 = Bewegung: Sucher-Overlay, Filmkamera, Drohnen-Szene, Klappe → V3.6 = Drohnen-Fix,
   Drohne am Handy, Abheben, Showreel klein, Slug-Tageszeit, Zählwerk, Klappe, Großansicht →
-  V3.7 = Klappe zurück auf V3.5, anime.js selbst gehostet.)
+  V3.7 = Klappe zurück auf V3.5, anime.js selbst gehostet → V3.8 = Propeller-Unschärfe,
+  Zählwerk langsamer.)
 - **⚠️ Projekte-Szene ist ausgebaut (seit V3.4, Datenschutz):** Die zwei Kurzfilme („Was kommt
   danach?" / Postcard-Challenge und ALLEIN) sind **nicht** auf der Seite, solange die
   Datenschutzvereinbarungen mit den beteiligten Personen nicht unterschrieben sind. Der komplette
@@ -505,7 +519,6 @@ nur die sichtbare Seite).
   (s. o.). Das frühere `<img fetchpriority="high">` gibt es dort nicht mehr.
 
 ### Offene Punkte (TODO)
-- **Drohne am echten Handy:** gemessen nur mit Chrome und Mac-GPU. Betreiber testet am iPhone.
 - **Luftbild für die Drohnen-Szene (optional, Betreiber liefert):** Datei als
   `assets/drohne/luftbild.jpg` ablegen (dazu WebP-Varianten nach der Bild-Konvention), dann diesen
   Block in `index.html` nach `</div>` von `.drone-grid` einsetzen und Breite/Höhe eintragen:
@@ -598,6 +611,12 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-11-12 — Propeller-Unschärfe, Zählwerk langsamer (V3.8):** Betreiber hat am iPhone getestet,
+  die Drohne läuft flüssig. Wünsche: Propeller nach dem Start so schnell, dass man keine einzelnen
+  Blätter mehr erkennt, und das Zählwerk etwas langsamer. Umsetzung s. „Code-Notizen"
+  (Propeller-Unschärfe, Bildzählwerk). three.js-Bündel neu gebaut (plus `Mesh`, `RingGeometry`,
+  `MeshBasicMaterial`, `DoubleSide`, +1 KB). Geprüft: keine Konsolenfehler, Handy weiter 60 fps bei
+  4-facher Drosselung. Version 3.7 → 3.8.
 - **2026-11-12 — Klappe zurück, anime.js selbst gehostet (V3.7):** Betreiberwunsch „die klappe
   zurück zu version 3.5, und ja selbst hosten". `CLAPPER`, `setupForm()` und das Klappen-CSS sind
   1:1 der Stand von `vor-v3.6` (per `diff` geprüft), `buildSlate()` und `.slate*` sind raus.
