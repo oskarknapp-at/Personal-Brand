@@ -63,7 +63,7 @@ Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS
 Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünschter Bewegung.
 1. `setupAge()` – Alter aus Geburtsdatum (27.08.2010), füllt `[data-age]`.
 2. `onScrollRatio()` + `setupScroll()` – **eine** gemeinsame Scroll-Quelle (rAF-gedrosselt, Wert 0 bis 1).
-   Balken, Akku im Sucher und Filmkamera melden sich mit `onScrollRatio(fn)` an. `setupScroll()`
+   Balken und Filmkamera melden sich mit `onScrollRatio(fn)` an. `setupScroll()`
    wird als **letztes** `setup*()` aufgerufen, damit alle Abnehmer schon angemeldet sind.
    `setupProgress()` – roter Scroll-Fortschrittsbalken oben (am Desktop mit Filmkamera per CSS aus).
    2b. `setupBurger()` – Mobile-Burger-Menü (≤ 800px).
@@ -82,7 +82,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
    generische `[data-animate]`-Reveals per `onScroll`).
 
 7. `setupHeroVideo()` – Showreel, bei reduced motion angehalten.
-8. `setupViewfinder()` – Sucher-Overlay im Hero (`VIEWFINDER`-Markup, Live-Timecode, REC, Akku).
+8. *(entfällt seit V4.0: `setupViewfinder()`, Sucher-Overlay im Hero, s. „Code-Notizen“)*
 9. `setupReel()` – Filmkamera am linken Rand als Scroll-Fortschritt mit Szenen-Markern (`REEL`-Markup).
 10. `setupDrone()` + `startDrone()` – lädt three.js und das GLB erst in der Nähe der Drohnen-Szene
     und steuert Ausklappen, Propeller, Neigung, Schweben und Abheben.
@@ -91,7 +91,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
 13. `setupLightbox()` + `largestSource()` – Großansicht der Fotos im nativen `<dialog>`.
 
 ## Von JS erzeugte Elemente (stehen nicht im HTML)
-Ohne JS gibt es keines davon, deshalb auch keine toten Elemente: `.vf` (Sucher, in `.hero-frame`),
+Ohne JS gibt es keines davon, deshalb auch keine toten Elemente:
 `.reel` (Filmkamera, am Ende von `<body>`, dazu Klasse `has-reel` auf `<html>`), `.clapper` (Klappe
 in `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), `.field-check`,
 `.lightbox` (Dialog am Ende von `<body>`, dazu Klasse `is-locked` auf `<html>` solange offen),
@@ -114,7 +114,7 @@ in `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), 
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.9` (V3.9 / `v=3.9`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=4.0` (V4.0 / `v=4.0`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -212,19 +212,12 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   aber Parameter. Die Deko-Timecodes in den Szenenköpfen mussten **nicht** angepasst werden: Ihre
   Frame-Stellen (00, 00, 10, 16, 12) liegen unter 25 und sind damit gültig. **Neue Deko-Timecodes
   brauchen eine Frame-Stelle von 00 bis 24.**
-- **Live-Timecode im Sucher läuft über `requestAnimationFrame` + `video.currentTime`, bewusst
-  nicht über `requestVideoFrameCallback`:** Der Frame-Callback liefert die Zeit des zuletzt
-  gezeigten Frames und hinkt `currentTime` im Test bis zu 1,3 Frames hinterher. Mit
-  `Math.floor(currentTime * 25)` im selben Bild liegt die Abweichung gemessen zwischen 0 und 1 Frame.
-  Die Schleife läuft nur, solange das Video spielt **und** der Hero im Bild ist
-  (`IntersectionObserver`), sonst wird einmal gezeichnet und gestoppt.
-- **REC-Punkt blinkt aus der Videozeit** (`currentTime % 1 < 0.5`), nicht per CSS-Animation. Steht
-  das Video (reduced motion), steht der Punkt. So gibt es keine Endlosschleife ohne Grund.
-- **Sucher-Werte** (`4K 25p`, `S-Log3`, `ISO 800`, `180.0°`) entsprechen dem echten Setup (a6700,
-  untere Basis-ISO in S-Log3, 1/50 bei 25p). **Keine Marke, kein Kameraname, kein Logo** im Overlay.
-  Die untere Zeile steht rechts, weil die Statement-Box den Rahmen unten links überlappt. Am Handy
-  (≤ 800 px) ist `.vf-extra` aus, es bleiben REC, Timecode, Akku. Akku: 100 % oben, 15 % am
-  Seitenende, ab 20 % rot.
+- **Sucher-Overlay im Hero: ausgebaut seit V4.0** (Betreiber: „das ist zu viel“). Es gab REC,
+  Live-Timecode aus `video.currentTime` (25 fps, rAF statt `requestVideoFrameCallback`, weil der
+  Frame-Callback bis 1,3 Frames hinterherhinkt), `4K 25p`, `S-Log3`, `ISO 800`, `180.0°` und einen
+  Akku, der beim Scrollen von 100 auf 15 % fiel. Der komplette Stand (`VIEWFINDER`,
+  `setupViewfinder()`, CSS `.vf*`) steht in Git im Commit `6e1399c` (V3.9). Die Helfer `FPS`,
+  `tcToFrames`, `framesToTc` bleiben, `initMotion()` nutzt sie für die Szenen-Timecodes.
 - **Filmkamera und linke Schiene (`.has-reel`, ab 1100 px Breite und 560 px Höhe):** Der linke Rand
   ist ohne Eingriff bei 1280 px nur 51 px breit, die Kamera braucht 104 px (`--rail: 6.5rem`).
   `--edge: max(var(--gutter), calc(var(--rail) - max(0px, (100vw - 90rem) / 2)))` schiebt Nav,
@@ -437,6 +430,8 @@ Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Fo
 nur die sichtbare Seite).
 
 ### Aktueller Stand (Stand 2026-11-12)
+- **V4.0 (live seit 2026-11-12):** Sucher-Overlay im Hero ausgebaut, das Showreel läuft wieder ohne
+  Einblendungen.
 - **V3.9 (live seit 2026-11-12):** Propeller im Standgas, schnell und unscharf nur beim Abheben,
   keine Reaktion mehr auf die Scroll-Geschwindigkeit (weder Drehzahl noch Neigung).
 - **V3.8 (live seit 2026-11-12):** Nach dem iPhone-Test des Betreibers („Drohne läuft flüssig"):
@@ -451,14 +446,14 @@ nur die sichtbare Seite).
   Scroll-Fortschritt (Desktop), Klappe im Kontaktformular, neue Szene 03 Drohne mit 3D-Modell.
   Details unter „Code-Notizen" und „3D-Drohne". Sicherungspunkt vor dem Umbau: Git-Tag
   `vor-animationen` (auf `5501cac`, auch auf GitHub).
-- **Live-Version:** **V3.9** (`v=3.9`, s. o.). **Versionsschema seit V3.0:
+- **Live-Version:** **V4.0** (`v=4.0`, s. o.). **Versionsschema seit V3.0:
   Schritte von 0.1** (V2.9 → V3.0 → V3.1 …), s. „Konventionen". (Ablauf: … → V2.9 =
   E-Mail-Live-Prüfung → V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig →
   V3.2 = Papierton fast weiß → V3.3 = Untertitel aus → V3.4 = Projekte-Szene ausgebaut →
   V3.5 = Bewegung: Sucher-Overlay, Filmkamera, Drohnen-Szene, Klappe → V3.6 = Drohnen-Fix,
   Drohne am Handy, Abheben, Showreel klein, Slug-Tageszeit, Zählwerk, Klappe, Großansicht →
   V3.7 = Klappe zurück auf V3.5, anime.js selbst gehostet → V3.8 = Propeller-Unschärfe,
-  Zählwerk langsamer → V3.9 = Standgas, schnell nur beim Abheben.)
+  Zählwerk langsamer → V3.9 = Standgas, schnell nur beim Abheben → V4.0 = Sucher-Overlay weg.)
 - **⚠️ Projekte-Szene ist ausgebaut (seit V3.4, Datenschutz):** Die zwei Kurzfilme („Was kommt
   danach?" / Postcard-Challenge und ALLEIN) sind **nicht** auf der Seite, solange die
   Datenschutzvereinbarungen mit den beteiligten Personen nicht unterschrieben sind. Der komplette
@@ -618,6 +613,10 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-11-12 — Sucher-Overlay ausgebaut (V4.0):** Betreiber: „das camera overlay im showreel weg,
+  das ist zu viel“. `VIEWFINDER`, `setupViewfinder()` und alle `.vf*`-Regeln gelöscht (nicht
+  auskommentiert), Stand in Git (`6e1399c`). Geprüft bei 1440×900 und 390×844: kein `.vf` im DOM,
+  Video läuft, keine Konsolenfehler. Version 3.9 → 4.0.
 - **2026-11-12 — Standgas, schnell nur beim Abheben (V3.9):** Betreiber: In V3.8 drehten die
   Propeller immer schnell, gewollt war Standgas und schnell nur beim Rausfliegen. Dass die Drehzahl
   am Scroll-Tempo hängt, „bringt gar nichts". Auf Rückfrage entschieden: Standgas etwas schneller
