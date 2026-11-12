@@ -73,9 +73,9 @@
 
   <link rel="preload" href="assets/fonts/archivo-variable.woff2" as="font" type="font/woff2" crossorigin>
 
-  <link rel="stylesheet" href="style.css?v=3.4">
+  <link rel="stylesheet" href="style.css?v=3.5">
 
-  <script type="module" src="main.js?v=3.4"></script>
+  <script type="module" src="main.js?v=3.5"></script>
 </head>
 <body>
 
@@ -91,6 +91,7 @@
     </button>
     <nav id="site-menu" aria-label="Hauptnavigation">
       <a href="#fotos">FOTOS</a>
+      <a href="#drohne">DROHNE</a>
       <a href="#about">ABOUT</a>
       <a href="#kontakt">KONTAKT</a>
     </nav>
@@ -209,9 +210,47 @@
       </div>
     </section>
 
+    <section id="drohne" class="scene scene--drone">
+      <div class="scene-head" data-animate>
+        <span class="slug">SZENE 03 / EXT. LUFTRAUM / TAG</span>
+        <span class="tc" data-tc="00:03:05:10">TC&nbsp;00:03:05:10</span>
+      </div>
+      <h2 class="scene-title" data-split>DROHNE</h2>
+
+      <div class="drone-grid">
+        <figure class="drone-stage">
+          <img class="drone-still"
+               src="assets/drohne/mavic-3-classic-960.webp"
+               srcset="assets/drohne/mavic-3-classic-480.webp 480w, assets/drohne/mavic-3-classic-960.webp 960w, assets/drohne/mavic-3-classic-1200.webp 1200w, assets/drohne/mavic-3-classic-1600.webp 1600w"
+               sizes="(max-width: 800px) 92vw, 56vw"
+               alt="DJI Mavic 3 Classic mit ausgeklappten Armen"
+               loading="lazy" width="1600" height="1200">
+          <figcaption class="mono-label">DJI MAVIC 3 CLASSIC</figcaption>
+        </figure>
+
+        <div class="drone-info" data-animate>
+          <dl class="drone-facts">
+            <div class="drone-fact">
+              <dt>FLUGZEIT</dt>
+              <dd>14<span class="drone-unit">h</span></dd>
+            </div>
+            <div class="drone-fact">
+              <dt>STRECKE</dt>
+              <dd>124<span class="drone-unit">km</span></dd>
+            </div>
+            <div class="drone-fact">
+              <dt>FLÜGE</dt>
+              <dd>107</dd>
+            </div>
+          </dl>
+          <p class="drone-note">EU-KOMPETENZNACHWEIS A1/A3<br>STAND 11/2026</p>
+        </div>
+      </div>
+    </section>
+
     <section id="about" class="scene scene--about">
       <div class="scene-head" data-animate>
-        <span class="slug">SZENE 03 / INT. SCHNITT / NACHT</span>
+        <span class="slug">SZENE 04 / INT. SCHNITT / NACHT</span>
         <span class="tc" data-tc="00:03:41:16">TC&nbsp;00:03:41:16</span>
       </div>
       <h2 class="scene-title" data-split>ABOUT</h2>
@@ -237,7 +276,7 @@
 
     <section id="kontakt" class="scene scene--contact">
       <div class="scene-head" data-animate>
-        <span class="slug">SZENE 04 / INT. POSTFACH / NACHT</span>
+        <span class="slug">SZENE 05 / INT. POSTFACH / NACHT</span>
         <span class="tc" data-tc="00:08:47:12">TC&nbsp;00:08:47:12</span>
       </div>
       <h2 class="scene-title" data-split>KONTAKT</h2>
@@ -302,7 +341,7 @@
       <a href="impressum/">IMPRESSUM</a>
       <a href="datenschutz/">DATENSCHUTZ</a>
     </span>
-    <span>SCHNITT: ENDE / V3.4</span>
+    <span>SCHNITT: ENDE / V3.5</span>
   </footer>
 
 </body>

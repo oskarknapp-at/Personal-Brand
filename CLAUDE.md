@@ -19,6 +19,9 @@ Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS
 - **DSGVO:** YouTube lädt erst **nach Klick** und nur über `youtube-nocookie.com`. Keine Tracker,
   keine externen Requests beim Seitenaufbau (Schriften & Icons sind selbst gehostet / Daten-URIs).
 - Schriften selbst gehostet in `assets/fonts/` (Archivo variable, IBM Plex Mono 400/500/600).
+- **three.js (seit V3.5) ist selbst gehostet**, kein CDN: `assets/vendor/three-drohne.min.js` ist ein
+  einmalig gebautes Bündel (s. „3D-Drohne"). Es wird **nur** von `setupDrone()` nachgeladen, nie
+  beim Seitenaufbau, nie am Handy, nie bei `prefers-reduced-motion`.
 - **Alle Animationen ≤ 600 ms.**
 - **⚠️ KEIN KOMMENTAR IM AUSGELIEFERTEN CODE (PFLICHT):** `index.html`, `impressum/index.html`,
   `datenschutz/index.html`, `main.js`, `style.css` bleiben **komplett kommentarfrei** — kein
@@ -44,18 +47,21 @@ Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS
 ## Dateien
 | Datei | Inhalt |
 |---|---|
-| `index.html` | Die gesamte Seite. Szenen: 01 Hero, 02 Fotografie, 03 About, 04 Kontakt. (Projekte-Szene, Journey, „Zusammenarbeit" + Projekte 3/4 ausgebaut, s. „Ausgeblendete Inhalte".) |
+| `index.html` | Die gesamte Seite. Szenen: 01 Hero, 02 Fotografie, 03 Drohne, 04 About, 05 Kontakt. (Projekte-Szene, Journey, „Zusammenarbeit" + Projekte 3/4 ausgebaut, s. „Ausgeblendete Inhalte".) |
 | `main.js` | Gesamtes Verhalten, in nummerierte Abschnitte (1–6) gegliedert – siehe unten. |
 | `style.css` | Gesamtes Styling. Abschnitte per `/* ---------- … ---------- */`. Design-Tokens in `:root`. |
 | `impressum/`, `datenschutz/` | Rechtstexte, eigene `index.html`, teilen sich `../style.css`. |
-| `assets/` | Fotos (`DSC*`, `IMG*`), `thumbnails/` (YouTube-Standbilder), `fonts/`. |
+| `assets/` | Fotos, `fonts/`, `drohne/` (Standbild als WebP in 480/960/1600 und `mavic-3-classic.glb`), `vendor/` (three.js-Bündel, einzige Datei mit Lizenz-Kommentar, s. „3D-Drohne"). |
 | `robots.txt`, `sitemap.xml` | SEO. |
 | `.github/workflows/static.yml` | Deploy (s. u.). |
 
 ## main.js – Abschnitte (Funktion → Zweck)
 Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünschter Bewegung.
 1. `setupAge()` – Alter aus Geburtsdatum (27.08.2010), füllt `[data-age]`.
-2. `setupProgress()` – roter Scroll-Fortschrittsbalken oben.
+2. `onScrollRatio()` + `setupScroll()` – **eine** gemeinsame Scroll-Quelle (rAF-gedrosselt, Wert 0 bis 1).
+   Balken, Akku im Sucher und Filmkamera melden sich mit `onScrollRatio(fn)` an. `setupScroll()`
+   wird als **letztes** `setup*()` aufgerufen, damit alle Abnehmer schon angemeldet sind.
+   `setupProgress()` – roter Scroll-Fortschrittsbalken oben (am Desktop mit Filmkamera per CSS aus).
    2b. `setupBurger()` – Mobile-Burger-Menü (≤ 800px).
 3. `loadYouTubeApi()` + `setupEmbeds()` – Klick-zu-Laden-YouTube via **IFrame-Player-API**,
    `onReady → playVideo()`. Ladezustand („LÄDT …", Thumbnail bleibt), 10-s-Timeout-Fallback.
@@ -65,9 +71,22 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
    ohne Reload. `access_key` steht als hidden input in `index.html` (öffentlich, kein Secret).
    4b. `setupEmailCheck()` + `editDistance()` / `suggestDomain()` / `emailProblem()` – Live-Prüfung
    des E-Mail-Feldes (grüner Haken / roter Hinweis / Tippfehler-Vorschlag), s. „Code-Notizen".
-5. `tcToFrames()` / `framesToTc()` – Timecode-Hilfen, 24 fps, Format `HH:MM:SS:FF`.
+   4c. `CLAPPER` – SVG-Klappe, die `setupForm()` nach erfolgreichem Versand in die Statuszeile setzt.
+5. `tcToFrames(tc, fps)` / `framesToTc(total, fps)` – Timecode-Hilfen, Format `HH:MM:SS:FF`. `fps` ist
+   Parameter, Standard `FPS = 25` (echte Framerate von `show_reel.mp4`, s. „Code-Notizen").
 6. `initMotion({…anime})` – alle Animationen (Hero-Timeline, Szenentitel, Timecode-Counter,
    generische `[data-animate]`-Reveals per `onScroll`).
+
+7. `setupHeroVideo()` – Showreel, bei reduced motion angehalten.
+8. `setupViewfinder()` – Sucher-Overlay im Hero (`VIEWFINDER`-Markup, Live-Timecode, REC, Akku).
+9. `setupReel()` – Filmkamera am linken Rand als Scroll-Fortschritt mit Szenen-Markern (`REEL`-Markup).
+10. `setupDrone()` + `startDrone()` – lädt three.js und das GLB erst in der Nähe der Drohnen-Szene
+    und steuert Ausklappen, Propeller, Neigung und Schweben.
+
+## Von JS erzeugte Elemente (stehen nicht im HTML)
+Ohne JS gibt es keines davon, deshalb auch keine toten Elemente: `.vf` (Sucher, in `.hero-frame`),
+`.reel` (Filmkamera, am Ende von `<body>`, dazu Klasse `has-reel` auf `<html>`), `.clapper` (Klappe
+in `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), `.field-check`.
 
 ## JS-Hooks (data-Attribute in HTML)
 `data-age`, `data-split` (Text→Buchstaben), `data-tc` (Timecode), `data-yt` (YouTube-ID), `data-animate` (Scroll-Reveal).
@@ -86,7 +105,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.4` (V3.4 / `v=3.4`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.5` (V3.5 / `v=3.5`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -175,6 +194,79 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   Reserve. **Wird ein Slug länger als 33 Zeichen, muss der Teiler mitwachsen** — sonst läuft die
   Zeile über. Ab ~430 px Viewport greift die Obergrenze, dort steht wieder die Desktop-Größe
   0.72 rem; die Untergrenze 0.52 rem wirkt erst unter ~330 px (iPhone SE 1. Gen).
+- **Framerate 25 statt 24 (seit V3.5):** `ffprobe` meldet für `assets/show_reel.mp4` `25/1` fps
+  (772 Frames, 30,88 s). `FPS = 25` ist der Standardwert beider Timecode-Helfer, die Framerate ist
+  aber Parameter. Die Deko-Timecodes in den Szenenköpfen mussten **nicht** angepasst werden: Ihre
+  Frame-Stellen (00, 00, 10, 16, 12) liegen unter 25 und sind damit gültig. **Neue Deko-Timecodes
+  brauchen eine Frame-Stelle von 00 bis 24.**
+- **Live-Timecode im Sucher läuft über `requestAnimationFrame` + `video.currentTime`, bewusst
+  nicht über `requestVideoFrameCallback`:** Der Frame-Callback liefert die Zeit des zuletzt
+  gezeigten Frames und hinkt `currentTime` im Test bis zu 1,3 Frames hinterher. Mit
+  `Math.floor(currentTime * 25)` im selben Bild liegt die Abweichung gemessen zwischen 0 und 1 Frame.
+  Die Schleife läuft nur, solange das Video spielt **und** der Hero im Bild ist
+  (`IntersectionObserver`), sonst wird einmal gezeichnet und gestoppt.
+- **REC-Punkt blinkt aus der Videozeit** (`currentTime % 1 < 0.5`), nicht per CSS-Animation. Steht
+  das Video (reduced motion), steht der Punkt. So gibt es keine Endlosschleife ohne Grund.
+- **Sucher-Werte** (`4K 25p`, `S-Log3`, `ISO 800`, `180.0°`) entsprechen dem echten Setup (a6700,
+  untere Basis-ISO in S-Log3, 1/50 bei 25p). **Keine Marke, kein Kameraname, kein Logo** im Overlay.
+  Die untere Zeile steht rechts, weil die Statement-Box den Rahmen unten links überlappt. Am Handy
+  (≤ 800 px) ist `.vf-extra` aus, es bleiben REC, Timecode, Akku. Akku: 100 % oben, 15 % am
+  Seitenende, ab 20 % rot.
+- **Filmkamera und linke Schiene (`.has-reel`, ab 1100 px Breite und 560 px Höhe):** Der linke Rand
+  ist ohne Eingriff bei 1280 px nur 51 px breit, die Kamera braucht 104 px (`--rail: 6.5rem`).
+  `--edge: max(var(--gutter), calc(var(--rail) - max(0px, (100vw - 90rem) / 2)))` schiebt Nav,
+  Szenen und Footer **nur so weit wie nötig** nach rechts (46 bis 60 px), ab rund 1520 px greift
+  wieder der normale Rand. Gemessen bei 1100, 1280, 1440, 1512, 1920 px: Abstand Kamera zu Inhalt
+  mindestens 19 px. Die Verschiebung hängt an der Klasse `has-reel`, die erst JS setzt. Ohne JS
+  bleibt das Layout also unverändert. Unter 1100 px bleibt der rote Balken.
+- **Filmkamera, Verhalten:** Spulen-Füllstand flächentreu (`Math.sqrt`), vordere Spule (rechts,
+  Linsenseite) wird leer, hintere voll. Marker-Positionen werden aus den echten Szenen-Offsets
+  gerechnet und per `ResizeObserver` nachgeführt, weil sich die Seitenhöhe mit Galerie und
+  Schriften ändert. Der Szenenname steht als Label **unter** der Schiene statt als Tooltip neben
+  dem Marker, damit nichts über den Inhalt ragt. Am Seitenende blendet der Filmstreifen aus (Film
+  ist durch). Bei reduced motion drehen Speichen und Perforation nicht, Füllstand und Positions-
+  punkt zeigen den Fortschritt aber weiter an (Information, keine Animation).
+- **Klappe (`CLAPPER`):** reines CSS (`clapper-shut`, 80 ms Verzögerung + 300 ms), kein anime.js.
+  Der **Grundzustand ist geschlossen**, nur die Animation startet offen. Dadurch steht sie bei
+  reduced motion (globales `animation: none`) sofort geschlossen da. Sie hängt in `.form-status`
+  und verschwindet von selbst, sobald der nächste Status per `textContent` gesetzt wird.
+- **Drohnen-Szene, Laden:** `setupDrone()` startet nur bei ≥ 801 px, ohne reduced motion und mit
+  WebGL2. Ein `IntersectionObserver` mit 700 px Vorlauf lädt dann Bündel und GLB. Bis dahin, am
+  Handy, bei reduced motion und ohne JS steht das Standbild (`.drone-still`). `startDrone()` holt
+  sich den WebGL-Kontext **selbst und vor dem Laden von three.js** mit
+  `failIfMajorPerformanceCaveat: true`: Gibt es nur Software-Rendering (kein Grafikchip, nachgestellt mit Chrome
+  `--disable-gpu`), bleibt still das Standbild stehen, ohne Download und ohne Konsolenfehler.
+  Headless-Chrome auf dem Mac nutzt auch ohne Flags die GPU und lädt 3D. Für verlässliche
+  3D-Tests mit Playwright trotzdem `--use-angle=metal --enable-gpu --ignore-gpu-blocklist` setzen. Sobald das Modell
+  bereit ist, bekommt `.drone-stage` die Klasse `is-live`, das Standbild wird per `opacity: 0`
+  ausgeblendet (nicht `visibility`, damit der Alt-Text für Screenreader bleibt).
+- **Drohnen-Szene, Kamera muss zum Standbild passen:** `DRONE_VIEW` in `main.js` (Position
+  `0.5, 0.34, -0.66`, Ziel `0, 0.004, 0`, vertikaler Öffnungswinkel `31.42°`, Seitenverhältnis 4:3)
+  entspricht exakt der Blender-Kamera des Standbilds (48 mm bei 36 mm Sensor). Wer eines ändert,
+  muss das andere mitziehen, sonst springt die Drohne beim Wechsel vom Standbild zur 3D-Ansicht.
+  Der Ausschnitt ist bewusst weit, damit drehende Propeller nie am Canvas-Rand abgeschnitten werden.
+- **Drohnen-Szene, kein Sprung beim Wechsel vom Standbild zu 3D:** Das Standbild zeigt die
+  Drohne ausgeklappt. Ist die Szene in dem Moment, in dem das Modell fertig geladen ist, schon
+  (auch nur teilweise) im Bild, startet das Modell deshalb **direkt ausgeklappt** und überspringt
+  das Ausklappen. Nur wenn die Szene noch außerhalb liegt (der Normalfall dank 700 px Vorlauf),
+  startet es eingeklappt und klappt beim Reinscrollen aus. So sieht nie jemand
+  „ausgeklappt → eingeklappt → ausgeklappt".
+- **Drohnen-Szene, Bewegung:** Ausklappen einmalig in 600 ms ab 45 % Sichtbarkeit (vordere Arme
+  0 bis 420 ms, hintere 160 bis 600 ms, Blätter 300 bis 600 ms). Danach Propeller mit
+  Leerlauf-Drehzahl, Drehzahl und Neigung (max. rund 8°) folgen der geglätteten
+  Scroll-Geschwindigkeit, im Stillstand leichtes Schweben. **Die Render-Schleife läuft nur, solange
+  die Szene im Bild ist und das Ausklappen begonnen hat** (vorher wird nichts gezeichnet, gemessen:
+  0 Draw-Calls). Dass sie im sichtbaren Zustand auch ohne Scrollen weiterläuft, ist gewollt:
+  Leerlauf-Drehzahl und Schweben im Stillstand standen so im Auftrag. Ein unabhängiger Prüfer hat
+  das am 12.11. als Abweichung von „hängt an Scroll" angemerkt. Wer es abschalten will, stoppt die
+  Schleife, sobald `drive` eine Weile 0 ist. `devicePixelRatio` höchstens 2, keine Schatten.
+- **Drohnen-Standbild in vier Breiten (480/960/1200/1600):** Die 1200er (q 76, 23 KB) gibt es nur
+  wegen Handys mit 3-fachem Pixelraster: Dort braucht das Bild ~1080 Pixel, ohne 1200er lud
+  Chrome die 1600er (36 KB). Chrome lädt das Standbild trotz `loading="lazy"` beim ersten
+  Seitenaufbau (die Seite ist kurz genug für die Vorladedistanz), deshalb zählt es zum
+  Erstaufbau-Gewicht. Mit der 1200er bleibt der Zuwachs unter 30 KB.
+- **Luftbild in der Drohnen-Szene:** bewusst **nicht** eingebaut, solange `assets/drohne/luftbild.jpg`
+  fehlt (ein fehlendes Bild erzeugt einen 404 in der Konsole). Markup steht unter „Offene Punkte".
 - **Szenen-Titel-Reveal** nutzt anime.js `sync: "play"`: einmal ausgelöst, läuft die Animation
   immer zu Ende, auch bei schnellem Weiterscrollen.
 - **`.hero-frame video`:** `height: auto` überschreibt den `width`/`height`-Attribut-Hint am
@@ -182,6 +274,84 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
 - **Text-Split (`data-split`)** injiziert den ungeteilten Text als `.sr-only`-Span (Screenreader)
   und setzt die Einzelbuchstaben `aria-hidden` — **nicht** `aria-label` auf das Element (auf
   generischen `<span>` laut ARIA unzulässig, s. Historie V20).
+
+---
+
+## 3D-Drohne: Herkunft, Lizenz, Aufbereitung
+
+**Quelle:** Printables, Modell 325787 „DJI Mavic 3 Classic Drone",
+https://www.printables.com/model/325787-dji-mavic-3-classic-drone/files (zwei STL: folded, unfolded).
+
+**Lizenz laut Printables:** Creative Commons, Public Domain (CC0). Keine Namensnennung nötig,
+Bearbeitung und kommerzielle Nutzung erlaubt. Deshalb steht nichts im Impressum.
+
+**⚠️ Bekanntes Risiko (Betreiber-Entscheidung vom 11.11.2026):** Der Hochlader ist laut Printables
+**nicht der Urheber** („The user re-uploaded this model") und schreibt selbst, dass er die Modelle
+von der offiziellen DJI-Website genommen und von GLB nach STL umgewandelt hat. Gemeinfrei erklären
+kann nur der Rechteinhaber, die CC0-Angabe ist also nicht belastbar, die Rechte liegen vermutlich
+bei DJI. Der Betreiber hat entschieden, das Modell trotzdem zu nutzen. Verlangt DJI die Entfernung:
+`assets/drohne/mavic-3-classic.glb` und die drei WebP-Standbilder löschen und durch ein eigenes
+Modell ersetzen. Die Szene funktioniert auch nur mit Standbild.
+
+**Rohdateien und Skripte liegen nicht im Git:** `drohne-quelle/` steht in `.gitignore` (GitHub Pages
+veröffentlicht sonst alles). Dort liegen lokal die beiden STL und unter `drohne-quelle/werkzeug/`
+die Aufbereitungs-Skripte (`rig.py`, `build.py`, `render.py`, `drohne-entry.js`) samt `drohne.blend`.
+
+**Befund zum Modell:** Mit feiner Verschmelzung (0,02 mm) zerfällt es in 173 Einzelteile. Arme,
+Motoren und jedes Propellerblatt sind eigene Teile. (Bei grober Verschmelzung ab 0,5 mm wirken Rumpf
+und Arme wie ein Netz, das war ein Messfehler in der ersten Analyse.) `rig.py` vergleicht beide
+Dateien, ordnet jedes Teil dem Rumpf oder einem Arm zu und berechnet daraus Drehachse, Winkel und
+Gelenkpunkt: vordere Arme 110° um eine fast senkrechte Achse, hintere rund 174° um eine schräge
+Achse, die Blätter falten um ihre Stifte (rund 89° bis 100°). Die linken vorderen Blätter sind aus
+der rechten Seite gespiegelt, weil die Quelle dort nicht exakt symmetrisch ist.
+
+**Aufbau des GLB (Namen werden in `startDrone()` ausgewertet):** `Drohne` → `Rumpf` und vier Gelenke
+`Arm_FR`, `Arm_FL`, `Arm_RR`, `Arm_RL` (F vorne, R hinten, dann rechts/links) → je `Prop_xx` →
+zwei `Blatt_xx_n` und `Nabe_xx_Netz`. **Die Nabe dreht mit (seit 12.11., Betreiber-Hinweis):** An
+der echten Mavic 3 sitzen die Blätter auf einer Schnellwechsel-Nabe, die per Drücken und Drehen auf
+den Motor gesteckt wird und mit ihm rotiert. `build.py` hängt deshalb jedes Teil, dessen
+Schwerpunkt weniger als 0,5 mm neben der Propellerachse liegt und das höchstens 22 mm unter der
+Nabenmitte beginnt, an `Prop_xx`: Blatthalterung mit den drei Stiften (schwarz wie die Blätter),
+Grundplatte, zwei Ringe, Motorglocke und Welle. Das eigentliche Motorgehäuse liegt 2,1 mm neben
+der Achse und bleibt am Arm. Gelenke sind leere Knoten mit `extras`: `fold_axis` + `fold_angle` (Radiant,
+Faltung von aufgeklappt nach zusammengeklappt) bzw. `spin_axis`. Die Netze hängen als Kinder
+darunter. **Das ist nötig**, weil die meshopt-Quantisierung den Ursprung von Blatt-Knoten mit Netz
+verschiebt und die Gelenkpunkte sonst verloren gehen. Koordinaten: Y oben, Vorderseite Richtung
+−Z, Meter, deshalb Export mit `export_yup=False`. Farben: Gehäuse `#46484B` matt, Propeller
+`#151617`, Kamera `#1D1E20`, Linse `#060607`. Kein Rot.
+
+**Befehle (Stand V3.5, Blender 4.4.3, three 0.187.0, esbuild 0.28.2, @gltf-transform/cli 4.5.1):**
+
+```
+B=/Applications/Blender.app/Contents/MacOS/Blender
+W=drohne-quelle/werkzeug
+
+$B -b --factory-startup --python $W/build.py -- \
+  "drohne-quelle/dji mavic 3 classic unfolded.stl" \
+  "drohne-quelle/dji mavic 3 classic folded.stl" $W/out 0.5
+
+npx @gltf-transform/cli meshopt $W/out/drohne-roh.glb assets/drohne/mavic-3-classic.glb --level medium
+
+$B -b $W/out/drohne.blend --python $W/render.py -- $W/out/still.png 0 1600 1200 160 hero
+for w in 480 960 1600; do
+  cwebp -q 84 -alpha_q 92 -m 6 -resize $w $((w*3/4)) $W/out/still.png -o assets/drohne/mavic-3-classic-$w.webp
+done
+
+npx esbuild $W/drohne-entry.js --bundle --minify --format=esm --target=es2020 \
+  --legal-comments=inline --outfile=assets/vendor/three-drohne.min.js
+```
+
+`build.py` halbiert die Dreiecke (Faktor `0.5`, Ergebnis rund 66.000) und schreibt `drohne-roh.glb`
+plus `drohne.blend`. Für esbuild muss `three` installiert sein (`npm i three esbuild` in einem
+Ordner **außerhalb** des Repos, `drohne-entry.js` dorthin kopieren). Das Bündel enthält nur
+`WebGLRenderer`, `Scene`, `Group`, `PerspectiveCamera`, `HemisphereLight`, `DirectionalLight`,
+`Vector3`, `GLTFLoader` und `MeshoptDecoder`.
+
+**Größen:** GLB 597 KB (Budget 800), three.js-Bündel 648 KB roh, 163 KB gzip (Budget 200).
+
+**Kommentar-Regel und Vendor-Datei:** `assets/vendor/three-drohne.min.js` behält den
+Copyright-Hinweis von three.js (MIT verlangt ihn). Die Regel „kein Kommentar" gilt für die fünf
+eigenen Dateien, nicht für diese fremde Datei.
 
 ---
 
@@ -193,12 +363,16 @@ Erledigtes aus „Offene Punkte" streichen, neuen Eintrag in „Historie" (oben 
 Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Footer-Marker betrifft
 nur die sichtbare Seite).
 
-### Aktueller Stand (Stand 2026-09-08)
-- **Live-Version:** V3.3 ist live; **V3.4** (`v=3.4`, dieser Stand) baut die komplette
-  Projekte-Szene mit beiden Kurzfilmen aus (Datenschutz, s. u.). **Versionsschema seit V3.0:
+### Aktueller Stand (Stand 2026-11-12)
+- **Bewegung (V3.5, live seit 2026-11-12, Squash-Merge von `feature/bewegung`):** Sucher-Overlay im Hero, Filmkamera als
+  Scroll-Fortschritt (Desktop), Klappe im Kontaktformular, neue Szene 03 Drohne mit 3D-Modell.
+  Details unter „Code-Notizen" und „3D-Drohne". Sicherungspunkt vor dem Umbau: Git-Tag
+  `vor-animationen` (auf `5501cac`, auch auf GitHub).
+- **Live-Version:** **V3.5** (`v=3.5`, Bewegung, s. o.). **Versionsschema seit V3.0:
   Schritte von 0.1** (V2.9 → V3.0 → V3.1 …), s. „Konventionen". (Ablauf: … → V2.9 =
   E-Mail-Live-Prüfung → V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig →
-  V3.2 = Papierton fast weiß → V3.3 = Untertitel aus → V3.4 = Projekte-Szene ausgebaut.)
+  V3.2 = Papierton fast weiß → V3.3 = Untertitel aus → V3.4 = Projekte-Szene ausgebaut →
+  V3.5 = Bewegung: Sucher-Overlay, Filmkamera, Drohnen-Szene, Klappe.)
 - **⚠️ Projekte-Szene ist ausgebaut (seit V3.4, Datenschutz):** Die zwei Kurzfilme („Was kommt
   danach?" / Postcard-Challenge und ALLEIN) sind **nicht** auf der Seite, solange die
   Datenschutzvereinbarungen mit den beteiligten Personen nicht unterschrieben sind. Der komplette
@@ -212,10 +386,11 @@ nur die sichtbare Seite).
 - **Szenenköpfe:** Slug und Timecode stehen auf **jeder** Breite in einer Zeile (Betreiberwunsch,
   V3.1). Szene 04 heißt dafür „INT. SCHNITT" statt „INT. SCHNITTPLATZ". Die Schriftgröße rechnet
   sich aus der Viewportbreite, Details unter „Code-Notizen".
-- **Szenen-Nummerierung aktuell:** 01 Hero, **02 Fotografie, 03 About, 04 Kontakt** (seit V3.4,
-  Projekte-Szene ausgebaut). Bei Wiedereinbau der Projekte wandert alles wieder auf 02 Projekte /
-  03 Fotografie / 04 About / 05 Kontakt, bei zusätzlichem Wiedereinbau der Journey um eine weitere
-  Nummer.
+- **Szenen-Nummerierung aktuell (seit V3.5):** 01 Hero, 02 Fotografie, **03 Drohne** (`#drohne`,
+  `EXT. LUFTRAUM / TAG`, TC 00:03:05:10), 04 About, 05 Kontakt. Die Timecodes der alten Szenen sind
+  unverändert. **Die Nummern in den Archiv-Blöcken 5 und 6 stammen aus der Zeit vor der
+  Drohnen-Szene:** Beim Wiedereinbau der Projekte wird es 02 Projekte / 03 Fotografie / 04 Drohne /
+  05 About / 06 Kontakt, mit der Journey (zwischen About und Kontakt) noch eine Nummer mehr.
 - **Kontaktformular:** Nachrichtenfeld **ohne Zeichenlimit und ohne Zähler** (seit V28, Betreiber-
   wunsch). Kurz gab es beides (V26/V27) — falls es je zurück soll, steht der komplette Stand in
   PR #28 + #29 bzw. in den Historie-Einträgen zu V26/V27.
@@ -265,6 +440,19 @@ nur die sichtbare Seite).
   (s. o.). Das frühere `<img fetchpriority="high">` gibt es dort nicht mehr.
 
 ### Offene Punkte (TODO)
+- **Luftbild für die Drohnen-Szene (optional, Betreiber liefert):** Datei als
+  `assets/drohne/luftbild.jpg` ablegen (dazu WebP-Varianten nach der Bild-Konvention), dann diesen
+  Block in `index.html` nach `</div>` von `.drone-grid` einsetzen und Breite/Höhe eintragen:
+  ```html
+        <figure class="drone-aerial" data-animate>
+          <img src="assets/drohne/luftbild.jpg" alt="BESCHREIBUNG" loading="lazy" width="BREITE" height="HOEHE">
+        </figure>
+  ```
+  CSS für `.drone-aerial` gibt es noch nicht (volle Breite, Abstand nach oben), mit dem Bild anlegen.
+- **„Stand 11/2026" in der Drohnen-Szene** ist fester Text. Ändern sich Flugzeit (14 h), Strecke
+  (124 km) oder Flüge (107), Zahlen **und** Stand in `index.html` nachziehen.
+- **Lizenz des Drohnen-Modells ist nicht belastbar** (Herkunft DJI, s. „3D-Drohne"). Spätestens
+  vor der Gewerbeanmeldung neu bewerten.
 - **Placeholder** (Betreiber liefert Medien selbst): `og:image`. Die 3× Journey-Videos
   (`data-yt="DEINE_YOUTUBE_ID"` + `placehold.co`-Thumbnails) sind **seit V26 nicht mehr auf der
   Seite** — der ganze Journey-Block liegt im Archiv (s. „Ausgeblendete Inhalte" Block 5) und kommt
@@ -297,6 +485,26 @@ nur die sichtbare Seite).
 - **Backlog:** optional AAAA-/IPv6-Records; Journey-Serie zu echtem Content-Hub ausbauen
   (pro Folge Seite/Anchor + VideoObject + Textzusammenfassung).
 
+### Lokal am Mac prüfen (seit V3.5 so gemacht)
+- **Playwright ohne Browser-Download:** `npm i playwright-core` in einem Ordner außerhalb des Repos,
+  dann `chromium.launch({ channel: "chrome" })`. Das echte Chrome spielt H.264, der Live-Timecode
+  ist damit prüfbar (anders als in der Sandbox unten). Web3Forms im Test mit `page.route` mocken.
+- **Lighthouse:** `npx lighthouse http://127.0.0.1:PORT/ --only-categories=performance` mit
+  `CHROME_PATH` auf das installierte Chrome. **Wichtig:** `python3 -m http.server` liefert **ohne
+  gzip** aus, GitHub Pages mit. Für einen fairen Vorher-Nachher-Vergleich einen Server mit gzip
+  nehmen und immer den Median aus drei Läufen vergleichen (Einzelläufe schwanken um bis zu 6 Punkte).
+- **Messwerte V3.4 → V3.5 (Lighthouse Handy):** mit gzip Performance 96 → 96, LCP vorher und
+  nachher gleich (2,70 s in einem Lauf, 2,78 s im Prüfer-Lauf mit Median aus 5). Ohne gzip
+  (python-Server) 95 → 94 und 2,93 s → 3,08 s, weil dort die rohen Dateigrößen zählen. HTML +
+  CSS + JS zusammen 15,2 KB → 21,0 KB (gzip). Erstaufbau ohne Video im Prüfer-Lauf +25,7 KB,
+  davon 20,6 KB Drohnen-Standbild (s. „Code-Notizen").
+- **Unabhängiger Prüfer (12.11.2026):** alle 13 Ziel-Kriterien und die Design-Regeln geprüft, kein
+  Blocker. Danach Betreiber-Hinweis umgesetzt: die Propeller-Nabe dreht jetzt mit (s. „3D-Drohne").
+  Behoben danach: Sprung Standbild → 3D, Leerlauf der Schleife vor dem Ausklappen,
+  1200er-Standbild fürs Handy, Einrückung bei „124 km" entfernt, Sucher-Schrift kräftiger
+  abgesetzt. Bewusst gelassen: Schweben und Leerlauf-Propeller im Stillstand (Auftrag), roter
+  Filmstreifen an der Kamera (Auftrag: Strichzeichnung in Rot und Ink).
+
 ### Sandbox-Wissen (spart nächstes Mal Zeit)
 - **okmedia.at selbst ist aus der Sandbox nicht erreichbar** (Proxy blockt → `curl` gibt `000`).
   Live-Verifikation daher nur durch den Betreiber oder externe Tools (PageSpeed, Rich-Results-Test).
@@ -313,6 +521,32 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-11-12 — Bewegung: Filmsprache-Animationen (V3.5):** Auftrag des Betreibers nach einem
+  Brainstorming: Die Seite ist wie ein Film aufgebaut, soll sich aber auch so bewegen, ruhig und
+  professionell. Vier Bausteine, je ein Commit auf `feature/bewegung`:
+  **(A) Sucher-Overlay** im Hero (`setupViewfinder()`): REC, Live-Timecode aus `video.currentTime`
+  bei 25 fps (gemessen: Abweichung 0 bis 1 Frame), Format, Bildprofil, ISO, Shutter-Winkel, Akku,
+  der beim Scrollen von 100 % auf 15 % fällt. Am Handy nur REC, Timecode, Akku.
+  **(B) Filmkamera** am linken Rand (`setupReel()`): zwei Spulen als Scroll-Fortschritt, laufender
+  Filmstreifen, Szenen-Marker zum Springen. Ersetzt ab 1100 px den roten Balken, der Inhalt rückt
+  dafür 46 bis 60 px nach rechts (Betreiber-Entscheidung „Schiene ab 1100 px").
+  **(D) Klappe** nach erfolgreichem Absenden, Statustext „GESENDET / Is im Kasten."
+  **(C) Szene 03 Drohne:** DJI Mavic 3 Classic in 3D mit 14 h, 124 km, 107 Flügen,
+  EU-Kompetenznachweis A1/A3, „Stand 11/2026". Arme klappen aus, Propeller und Neigung folgen dem
+  Scrollen. Am Handy, bei reduced motion und ohne JS steht ein Standbild.
+  Dazu: `FPS` 24 → 25 und als Parameter, gemeinsame Scroll-Quelle `onScrollRatio()`, Nav-Link
+  `DROHNE`, About und Kontakt auf Szene 04 und 05, `llms.txt` ergänzt.
+  **Abgelehnt und nicht gebaut** (Betreiber): Letterbox-Reveals, LOG-zu-Graded, Abspann-Roll,
+  scroll-gesteuertes Drohnenvideo, Custom Cursor, Magnet-Buttons, Parallax, Countdown-Intro.
+  **Lizenz:** Das Modell stammt laut Hochlader von der DJI-Website, die CC0-Angabe ist nicht
+  belastbar. Der Betreiber nutzt es trotzdem (s. „3D-Drohne").
+  **Geprüft** mit Playwright und lokalem Chrome: keine Konsolenfehler (1440×900, 390×844), ohne JS
+  und mit reduced motion alles lesbar, am Handy kein three.js und kein GLB im Netzwerk-Log, kein
+  horizontaler Überlauf ab 360 px. Gewichte und Lighthouse stehen unter „Lokal am Mac prüfen".
+  Danach unabhängiger Prüfer (Befunde behoben, s. dort) und Betreiber-Hinweis zur mitdrehenden
+  Nabe umgesetzt. Version 3.4 → 3.5 (Cache-Buster + Footer-Marker in allen drei HTML-Dateien),
+  `sitemap.xml` `lastmod` der Startseite auf 2026-11-12. Wegen des Umfangs erst nach Freigabe
+  gemergt (Ausnahme von „immer gleich mergen").
 - **2026-09-08 — Projekte-Szene ausgebaut, Datenschutz (V3.4):** Betreiberwunsch: Die beiden
   Kurzfilme („Was kommt danach?" / Postcard-Challenge, `5XbbUtZ45v0`, und ALLEIN, `QDq6b3w08eM`)
   müssen runter, bis die Datenschutzvereinbarungen mit den beteiligten Personen unterschrieben sind

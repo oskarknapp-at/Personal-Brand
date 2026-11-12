@@ -20,27 +20,39 @@ function setupAge() {
   });
 }
 
-function setupProgress() {
-  const fill = $(".progress-fill");
-  if (!fill) return;
+const scrollWatchers = [];
 
+function onScrollRatio(watcher) {
+  scrollWatchers.push(watcher);
+}
+
+function setupScroll() {
   let ticking = false;
   const update = () => {
     const doc = document.documentElement;
     const max = doc.scrollHeight - window.innerHeight;
-    const ratio = max > 0 ? window.scrollY / max : 0;
-    fill.style.width = `${(ratio * 100).toFixed(2)}%`;
+    const ratio = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+    scrollWatchers.forEach((watcher) => watcher(ratio));
     ticking = false;
   };
+  const request = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(update);
+  };
 
-  window.addEventListener("scroll", () => {
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(update);
-    }
-  }, { passive: true });
-
+  window.addEventListener("scroll", request, { passive: true });
+  window.addEventListener("resize", request, { passive: true });
   update();
+}
+
+function setupProgress() {
+  const fill = $(".progress-fill");
+  if (!fill) return;
+
+  onScrollRatio((ratio) => {
+    fill.style.width = `${(ratio * 100).toFixed(2)}%`;
+  });
 }
 
 function setupBurger() {
@@ -408,6 +420,16 @@ function setupEmailCheck() {
   };
 }
 
+const CLAPPER =
+  '<svg class="clapper" viewBox="0 0 34 28" aria-hidden="true" focusable="false">' +
+  '<rect class="clapper-board" x="2" y="12.5" width="30" height="13.5" rx="1.2"/>' +
+  '<path class="clapper-rule" d="M6 18.5h22M6 22h13"/>' +
+  '<g class="clapper-base"><rect x="2" y="8.5" width="30" height="4"/>' +
+  '<path d="M9 8.5l-3 4M17 8.5l-3 4M25 8.5l-3 4"/></g>' +
+  '<g class="clapper-arm"><rect x="2" y="4.5" width="30" height="4"/>' +
+  '<path d="M6 4.5l3 4M14 4.5l3 4M22 4.5l3 4"/></g>' +
+  "</svg>";
+
 function setupForm() {
   const form = $(".contact-form");
   if (!form) return;
@@ -451,7 +473,9 @@ function setupForm() {
       const data = await response.json();
       if (!data.success) throw new Error(data.message);
 
-      status.textContent = "GESENDET / Danke, ich melde mich.";
+      status.textContent = "GESENDET / Is im Kasten.";
+      status.insertAdjacentHTML("afterbegin", CLAPPER);
+      status.dataset.state = "sent";
       form.reset();
     } catch {
       status.dataset.state = "error";
@@ -462,17 +486,17 @@ function setupForm() {
   });
 }
 
-const FPS = 24;
+const FPS = 25;
 
-function tcToFrames(tc) {
+function tcToFrames(tc, fps = FPS) {
   const [h, m, s, f] = tc.split(":").map(Number);
-  return (h * 3600 + m * 60 + s) * FPS + f;
+  return (h * 3600 + m * 60 + s) * fps + f;
 }
 
-function framesToTc(total) {
+function framesToTc(total, fps = FPS) {
   const frames = Math.max(0, Math.round(total));
-  const f = frames % FPS;
-  const seconds = Math.floor(frames / FPS);
+  const f = frames % fps;
+  const seconds = Math.floor(frames / fps);
   const s = seconds % 60;
   const m = Math.floor(seconds / 60) % 60;
   const h = Math.floor(seconds / 3600);
@@ -582,14 +606,392 @@ function setupHeroVideo() {
   video.play().catch(() => {});
 }
 
+const VIEWFINDER =
+  '<div class="vf" aria-hidden="true">' +
+  '<i class="vf-corner vf-corner--tl"></i><i class="vf-corner vf-corner--tr"></i>' +
+  '<i class="vf-corner vf-corner--bl"></i><i class="vf-corner vf-corner--br"></i>' +
+  '<div class="vf-group vf-group--tl">' +
+  '<span class="vf-rec"><i class="vf-dot"></i>REC</span>' +
+  '<span class="vf-tc">00:00:00:00</span>' +
+  "</div>" +
+  '<div class="vf-group vf-group--tr">' +
+  '<svg class="vf-batt" viewBox="0 0 28 14" focusable="false">' +
+  '<rect class="vf-batt-case" x="0.75" y="0.75" width="23.5" height="12.5" rx="2"/>' +
+  '<rect class="vf-batt-tip" x="25.5" y="4.5" width="2" height="5" rx="0.6"/>' +
+  '<rect class="vf-batt-level" x="2.75" y="2.75" width="19.5" height="8.5" rx="0.6"/>' +
+  "</svg>" +
+  '<span class="vf-pct">100%</span>' +
+  "</div>" +
+  '<div class="vf-group vf-group--br vf-extra">' +
+  "<span>4K 25p</span><span>S-Log3</span><span>ISO 800</span><span>180.0°</span>" +
+  "</div>" +
+  "</div>";
+
+function setupViewfinder() {
+  const frame = $(".hero-frame");
+  const video = $(".hero-video");
+  if (!frame || !video) return;
+
+  frame.insertAdjacentHTML("beforeend", VIEWFINDER);
+  const vf = $(".vf", frame);
+  const tc = $(".vf-tc", vf);
+  const pct = $(".vf-pct", vf);
+  const level = $(".vf-batt-level", vf);
+  const levelWidth = parseFloat(level.getAttribute("width"));
+
+  let shownFrame = -1;
+  let shownRec = "";
+  const paint = () => {
+    const seconds = video.currentTime;
+    const frameNo = Math.floor(seconds * FPS + 0.0001);
+    if (frameNo !== shownFrame) {
+      shownFrame = frameNo;
+      tc.textContent = framesToTc(frameNo);
+    }
+    const rec = seconds % 1 < 0.5 ? "on" : "off";
+    if (rec !== shownRec) {
+      shownRec = rec;
+      vf.dataset.rec = rec;
+    }
+  };
+
+  let raf = 0;
+  let inView = true;
+  const loop = () => {
+    paint();
+    raf = requestAnimationFrame(loop);
+  };
+  const sync = () => {
+    cancelAnimationFrame(raf);
+    if (inView && !video.paused) loop();
+    else paint();
+  };
+
+  ["playing", "pause", "seeked"].forEach((type) => video.addEventListener(type, sync));
+
+  if ("IntersectionObserver" in window) {
+    new IntersectionObserver(([entry]) => {
+      inView = entry.isIntersecting;
+      sync();
+    }).observe(frame);
+  }
+
+  sync();
+
+  onScrollRatio((ratio) => {
+    const charge = Math.round(100 - ratio * 85);
+    pct.textContent = `${charge}%`;
+    level.setAttribute("width", ((levelWidth * charge) / 100).toFixed(2));
+    vf.dataset.battery = charge <= 20 ? "low" : "ok";
+  });
+}
+
+const REEL_CORE = 4.5;
+const REEL_FULL = 12;
+
+const REEL =
+  '<nav class="reel" aria-label="Szenen">' +
+  '<svg class="reel-cam" viewBox="0 0 64 70" aria-hidden="true" focusable="false">' +
+  '<path class="reel-film" d="M46 30.5V41q0 6-6 6H22.5q-6 0-6-6V30.5"/>' +
+  '<g class="reel-spool" data-spool="take">' +
+  '<circle class="reel-pack" cx="16.5" cy="16.5" r="4.5"/>' +
+  '<circle cx="16.5" cy="16.5" r="14"/>' +
+  '<g class="reel-spokes"><path d="M16.5 14.3V3.5M18.4 17.6l9.4 5.4M14.6 17.6l-9.4 5.4"/></g>' +
+  '<circle class="reel-hub" cx="16.5" cy="16.5" r="2.2"/>' +
+  "</g>" +
+  '<g class="reel-spool" data-spool="feed">' +
+  '<circle class="reel-pack" cx="46" cy="16.5" r="12"/>' +
+  '<circle cx="46" cy="16.5" r="14"/>' +
+  '<g class="reel-spokes"><path d="M46 14.3V3.5M47.9 17.6l9.4 5.4M44.1 17.6l-9.4 5.4"/></g>' +
+  '<circle class="reel-hub" cx="46" cy="16.5" r="2.2"/>' +
+  "</g>" +
+  '<rect x="7" y="33" width="44" height="30" rx="2"/>' +
+  '<path d="M51 41h5v14h-5M56 43.5l6.5-4.5v18l-6.5-4.5"/>' +
+  '<path d="M24 63v4h12v-4"/>' +
+  "</svg>" +
+  '<div class="reel-track"><i class="reel-pos"></i></div>' +
+  '<p class="reel-label" aria-hidden="true"></p>' +
+  "</nav>";
+
+function setupReel() {
+  const scenes = $$("main > .scene[id]");
+  if (!scenes.length) return;
+
+  document.body.insertAdjacentHTML("beforeend", REEL);
+  document.documentElement.classList.add("has-reel");
+
+  const reel = $(".reel");
+  const track = $(".reel-track", reel);
+  const pos = $(".reel-pos", reel);
+  const label = $(".reel-label", reel);
+  const film = $(".reel-film", reel);
+  const spools = {};
+  $$(".reel-spool", reel).forEach((spool) => {
+    const pack = $(".reel-pack", spool);
+    spools[spool.dataset.spool] = {
+      pack,
+      spokes: $(".reel-spokes", spool),
+      cx: pack.getAttribute("cx"),
+      cy: pack.getAttribute("cy"),
+    };
+  });
+
+  const wide = window.matchMedia("(min-width: 1100px) and (min-height: 560px)");
+  let ratio = 0;
+  let hovered = "";
+
+  const marks = scenes.map((scene, index) => {
+    const number = String(index + 1).padStart(2, "0");
+    const title = $(".scene-title", scene)?.textContent.trim() || "Start";
+    const link = document.createElement("a");
+    link.className = "reel-mark";
+    link.href = `#${scene.id}`;
+    link.setAttribute("aria-label", `Szene ${number}, ${title}`);
+    const name = `SZENE ${number}`;
+    const show = () => {
+      hovered = name;
+      render();
+    };
+    const hide = () => {
+      hovered = "";
+      render();
+    };
+    link.addEventListener("pointerenter", show);
+    link.addEventListener("pointerleave", hide);
+    link.addEventListener("focus", show);
+    link.addEventListener("blur", hide);
+    track.appendChild(link);
+    return { scene, link, name, at: 0 };
+  });
+
+  const radius = (fill) =>
+    Math.sqrt(REEL_CORE ** 2 + (REEL_FULL ** 2 - REEL_CORE ** 2) * fill).toFixed(2);
+
+  function render() {
+    if (!wide.matches) return;
+
+    const turn = reducedMotion ? 0 : ratio * 1440;
+    spools.feed.pack.setAttribute("r", radius(1 - ratio));
+    spools.take.pack.setAttribute("r", radius(ratio));
+    Object.values(spools).forEach(({ spokes, cx, cy }) => {
+      spokes.setAttribute("transform", `rotate(${turn.toFixed(1)} ${cx} ${cy})`);
+    });
+    film.style.strokeDashoffset = reducedMotion ? "0" : (-ratio * 260).toFixed(1);
+    reel.dataset.film = ratio > 0.995 ? "out" : "in";
+    pos.style.top = `${(ratio * 100).toFixed(2)}%`;
+
+    let current = marks[0];
+    marks.forEach((mark) => {
+      if (mark.at <= ratio + 0.004) current = mark;
+    });
+    marks.forEach((mark) => {
+      if (mark === current) mark.link.setAttribute("aria-current", "true");
+      else mark.link.removeAttribute("aria-current");
+    });
+    label.textContent = hovered || current.name;
+  }
+
+  const measure = () => {
+    if (!wide.matches) return;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    const offset = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+    marks.forEach((mark, index) => {
+      const top = mark.scene.getBoundingClientRect().top + window.scrollY - offset;
+      mark.at = index === 0 || max <= 0 ? 0 : Math.min(1, Math.max(0, top / max));
+      mark.link.style.top = `${(mark.at * 100).toFixed(2)}%`;
+    });
+    render();
+  };
+
+  onScrollRatio((value) => {
+    ratio = value;
+    render();
+  });
+
+  wide.addEventListener("change", measure);
+  window.addEventListener("load", measure);
+  if ("ResizeObserver" in window) new ResizeObserver(measure).observe(document.body);
+  measure();
+}
+
+const DRONE_VIEW = { fov: 31.42, position: [0.5, 0.34, -0.66], target: [0, 0.004, 0] };
+
+async function startDrone(stage) {
+  const canvas = document.createElement("canvas");
+  canvas.className = "drone-canvas";
+  canvas.setAttribute("aria-hidden", "true");
+
+  const context = canvas.getContext("webgl2", {
+    antialias: true,
+    alpha: true,
+    failIfMajorPerformanceCaveat: true,
+  });
+  if (!context) return;
+
+  const T = await import("./assets/vendor/three-drohne.min.js");
+
+  const renderer = new T.WebGLRenderer({ canvas, context, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+  const scene = new T.Scene();
+  const camera = new T.PerspectiveCamera(DRONE_VIEW.fov, 4 / 3, 0.05, 5);
+  camera.position.set(...DRONE_VIEW.position);
+  camera.lookAt(...DRONE_VIEW.target);
+
+  scene.add(new T.HemisphereLight(0xffffff, 0x808080, 2));
+  const key = new T.DirectionalLight(0xffffff, 3.4);
+  key.position.set(0.5, 0.9, -0.5);
+  const rim = new T.DirectionalLight(0xffffff, 2.2);
+  rim.position.set(-0.3, 0.6, 0.9);
+  scene.add(key, rim);
+
+  const loader = new T.GLTFLoader();
+  loader.setMeshoptDecoder(T.MeshoptDecoder);
+  const gltf = await loader.loadAsync("assets/drohne/mavic-3-classic.glb");
+
+  const craft = new T.Group();
+  craft.add(gltf.scene);
+  scene.add(craft);
+
+  const arms = [];
+  const blades = [];
+  const props = [];
+  gltf.scene.traverse((node) => {
+    const data = node.userData;
+    if (data.fold_axis) {
+      const joint = { node, axis: new T.Vector3(...data.fold_axis), angle: data.fold_angle };
+      if (node.name.startsWith("Blatt")) blades.push(joint);
+      else arms.push({ ...joint, rear: node.name.startsWith("Arm_R") });
+    }
+    if (data.spin_axis) {
+      const turn = /_(FR|RL)$/.test(node.name) ? 1 : -1;
+      props.push({ node, axis: new T.Vector3(...data.spin_axis), turn, phase: 0 });
+    }
+  });
+
+  const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+  const fold = (joint, folded) => {
+    joint.node.quaternion.setFromAxisAngle(joint.axis, joint.angle * folded);
+  };
+  const pose = (ms) => {
+    arms.forEach((arm) => fold(arm, 1 - ease(arm.rear ? (ms - 160) / 440 : ms / 420)));
+    blades.forEach((blade) => fold(blade, 1 - ease((ms - 300) / 300)));
+  };
+
+  const fit = () => {
+    const width = stage.clientWidth;
+    if (width) renderer.setSize(width, Math.round(width * 0.75), false);
+  };
+  const box = stage.getBoundingClientRect();
+  const seen = box.bottom > 0 && box.top < window.innerHeight;
+
+  fit();
+  pose(seen ? 600 : 0);
+  renderer.render(scene, camera);
+  stage.appendChild(canvas);
+  stage.classList.add("is-live");
+
+  let visible = false;
+  let opened = seen ? performance.now() - 600 : -1;
+  let settled = seen;
+  let raf = 0;
+  let last = 0;
+  let lastY = window.scrollY;
+  let velocity = 0;
+  let spin = 0;
+  let pitch = 0;
+  let pitchSpeed = 0;
+  let clock = 0;
+
+  const frame = (now) => {
+    raf = requestAnimationFrame(frame);
+    const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
+    last = now;
+    if (!dt) return;
+
+    const y = window.scrollY;
+    velocity += ((y - lastY) / dt - velocity) * (1 - Math.exp(-dt / 0.22));
+    lastY = y;
+    const drive = Math.max(-1, Math.min(1, velocity / 2200));
+
+    if (opened < 0) return;
+    const since = now - opened;
+    if (!settled) {
+      pose(since);
+      settled = since >= 600;
+    }
+
+    const flying = since > 600;
+    spin += ((flying ? 6 + Math.abs(drive) * 30 : 0) - spin) * (1 - Math.exp(-dt / 0.45));
+    props.forEach((prop) => {
+      prop.phase += spin * dt * prop.turn;
+      prop.node.quaternion.setFromAxisAngle(prop.axis, prop.phase);
+    });
+
+    const aim = flying ? -drive * 0.14 : 0;
+    pitchSpeed += ((aim - pitch) * 38 - pitchSpeed * 10.5) * dt;
+    pitch += pitchSpeed * dt;
+    craft.rotation.x = pitch;
+
+    clock += dt;
+    const calm = flying ? 1 - Math.abs(drive) : 0;
+    craft.position.y = Math.sin(clock * 1.5) * 0.005 * calm;
+    craft.rotation.z = Math.sin(clock * 0.9) * 0.012 * calm;
+
+    renderer.render(scene, camera);
+  };
+
+  const sync = () => {
+    cancelAnimationFrame(raf);
+    last = 0;
+    lastY = window.scrollY;
+    velocity = 0;
+    if (visible && opened >= 0) raf = requestAnimationFrame(frame);
+  };
+
+  new IntersectionObserver((entries) => {
+    const entry = entries[entries.length - 1];
+    visible = entry.isIntersecting;
+    if (opened < 0 && entry.intersectionRatio >= 0.45) opened = performance.now();
+    sync();
+  }, { threshold: [0, 0.45] }).observe(stage);
+
+  if ("ResizeObserver" in window) {
+    new ResizeObserver(() => {
+      fit();
+      renderer.render(scene, camera);
+    }).observe(stage);
+  }
+}
+
+function setupDrone() {
+  const stage = $(".drone-stage");
+  if (!stage || reducedMotion) return;
+  if (!window.matchMedia("(min-width: 801px)").matches) return;
+  if (!("IntersectionObserver" in window) || !("WebGL2RenderingContext" in window)) return;
+
+  const near = new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    near.disconnect();
+    startDrone(stage).catch((error) => {
+      console.warn("3D-Drohne konnte nicht geladen werden, das Standbild bleibt stehen.", error);
+    });
+  }, { rootMargin: "700px 0px" });
+  near.observe(stage);
+}
+
 setupAge();
 setupProgress();
+setupViewfinder();
+setupReel();
 setupBurger();
 setupEmbeds();
 setupGallery();
 setupEmailCheck();
 setupForm();
 setupHeroVideo();
+setupDrone();
+setupScroll();
 
 if (!reducedMotion) {
   try {
