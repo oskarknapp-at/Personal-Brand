@@ -817,13 +817,20 @@ function setupReel() {
 const DRONE_VIEW = { fov: 31.42, position: [0.5, 0.34, -0.66], target: [0, 0.004, 0] };
 
 async function startDrone(stage) {
-  const T = await import("./assets/vendor/three-drohne.min.js");
-
   const canvas = document.createElement("canvas");
   canvas.className = "drone-canvas";
   canvas.setAttribute("aria-hidden", "true");
 
-  const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  const context = canvas.getContext("webgl2", {
+    antialias: true,
+    alpha: true,
+    failIfMajorPerformanceCaveat: true,
+  });
+  if (!context) return;
+
+  const T = await import("./assets/vendor/three-drohne.min.js");
+
+  const renderer = new T.WebGLRenderer({ canvas, context, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
   const scene = new T.Scene();
