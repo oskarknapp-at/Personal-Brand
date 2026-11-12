@@ -882,15 +882,18 @@ async function startDrone(stage) {
     const width = stage.clientWidth;
     if (width) renderer.setSize(width, Math.round(width * 0.75), false);
   };
+  const box = stage.getBoundingClientRect();
+  const seen = box.bottom > 0 && box.top < window.innerHeight;
+
   fit();
-  pose(0);
+  pose(seen ? 600 : 0);
   renderer.render(scene, camera);
   stage.appendChild(canvas);
   stage.classList.add("is-live");
 
   let visible = false;
-  let opened = -1;
-  let settled = false;
+  let opened = seen ? performance.now() - 600 : -1;
+  let settled = seen;
   let raf = 0;
   let last = 0;
   let lastY = window.scrollY;
@@ -943,7 +946,7 @@ async function startDrone(stage) {
     last = 0;
     lastY = window.scrollY;
     velocity = 0;
-    if (visible) raf = requestAnimationFrame(frame);
+    if (visible && opened >= 0) raf = requestAnimationFrame(frame);
   };
 
   new IntersectionObserver((entries) => {

@@ -372,7 +372,7 @@ body.menu-open { overflow: hidden; }
   letter-spacing: 0.06em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 3px rgba(0, 0, 0, 0.55), 0 1px 1px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.7), 0 0 1px rgba(0, 0, 0, 0.8), 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .vf-corner {
@@ -381,7 +381,7 @@ body.menu-open { overflow: hidden; }
   height: 1.5em;
   border: 0 solid currentColor;
   opacity: 0.85;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.7));
 }
 
 .vf-corner--tl { top: var(--vf-inset); left: var(--vf-inset); border-top-width: 1px; border-left-width: 1px; }
@@ -420,7 +420,7 @@ body.menu-open { overflow: hidden; }
   width: 2.2em;
   height: 1.1em;
   overflow: visible;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.7));
 }
 
 .vf-batt-case { fill: none; stroke: currentColor; stroke-width: 1.2; }
@@ -661,8 +661,6 @@ body.menu-open { overflow: hidden; }
   flex-direction: column-reverse;
   margin-bottom: clamp(1.2rem, 3vh, 2rem);
 }
-
-.drone-fact:nth-child(2) { margin-left: clamp(1rem, 3.5vw, 3.5rem); }
 
 .drone-fact dt {
   font-family: var(--mono);

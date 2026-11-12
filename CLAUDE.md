@@ -234,10 +234,10 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   WebGL2. Ein `IntersectionObserver` mit 700 px Vorlauf lädt dann Bündel und GLB. Bis dahin, am
   Handy, bei reduced motion und ohne JS steht das Standbild (`.drone-still`). `startDrone()` holt
   sich den WebGL-Kontext **selbst und vor dem Laden von three.js** mit
-  `failIfMajorPerformanceCaveat: true`: Gibt es nur Software-Rendering (kein Grafikchip, z. B.
-  Headless-Chrome ohne GPU-Flags), bleibt still das Standbild stehen, ohne Download und ohne
-  Konsolenfehler. Für 3D-Tests mit Playwright deshalb Chrome mit
-  `--use-angle=metal --enable-gpu --ignore-gpu-blocklist` starten. Sobald das Modell
+  `failIfMajorPerformanceCaveat: true`: Gibt es nur Software-Rendering (kein Grafikchip, nachgestellt mit Chrome
+  `--disable-gpu`), bleibt still das Standbild stehen, ohne Download und ohne Konsolenfehler.
+  Headless-Chrome auf dem Mac nutzt auch ohne Flags die GPU und lädt 3D. Für verlässliche
+  3D-Tests mit Playwright trotzdem `--use-angle=metal --enable-gpu --ignore-gpu-blocklist` setzen. Sobald das Modell
   bereit ist, bekommt `.drone-stage` die Klasse `is-live`, das Standbild wird per `opacity: 0`
   ausgeblendet (nicht `visibility`, damit der Alt-Text für Screenreader bleibt).
 - **Drohnen-Szene, Kamera muss zum Standbild passen:** `DRONE_VIEW` in `main.js` (Position
@@ -245,11 +245,26 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   entspricht exakt der Blender-Kamera des Standbilds (48 mm bei 36 mm Sensor). Wer eines ändert,
   muss das andere mitziehen, sonst springt die Drohne beim Wechsel vom Standbild zur 3D-Ansicht.
   Der Ausschnitt ist bewusst weit, damit drehende Propeller nie am Canvas-Rand abgeschnitten werden.
+- **Drohnen-Szene, kein Sprung beim Wechsel vom Standbild zu 3D:** Das Standbild zeigt die
+  Drohne ausgeklappt. Ist die Szene in dem Moment, in dem das Modell fertig geladen ist, schon
+  (auch nur teilweise) im Bild, startet das Modell deshalb **direkt ausgeklappt** und überspringt
+  das Ausklappen. Nur wenn die Szene noch außerhalb liegt (der Normalfall dank 700 px Vorlauf),
+  startet es eingeklappt und klappt beim Reinscrollen aus. So sieht nie jemand
+  „ausgeklappt → eingeklappt → ausgeklappt".
 - **Drohnen-Szene, Bewegung:** Ausklappen einmalig in 600 ms ab 45 % Sichtbarkeit (vordere Arme
   0 bis 420 ms, hintere 160 bis 600 ms, Blätter 300 bis 600 ms). Danach Propeller mit
   Leerlauf-Drehzahl, Drehzahl und Neigung (max. rund 8°) folgen der geglätteten
-  Scroll-Geschwindigkeit, im Stillstand leichtes Schweben. Die Render-Schleife läuft nur, solange
-  die Szene im Bild ist. `devicePixelRatio` höchstens 2, keine Schatten.
+  Scroll-Geschwindigkeit, im Stillstand leichtes Schweben. **Die Render-Schleife läuft nur, solange
+  die Szene im Bild ist und das Ausklappen begonnen hat** (vorher wird nichts gezeichnet, gemessen:
+  0 Draw-Calls). Dass sie im sichtbaren Zustand auch ohne Scrollen weiterläuft, ist gewollt:
+  Leerlauf-Drehzahl und Schweben im Stillstand standen so im Auftrag. Ein unabhängiger Prüfer hat
+  das am 12.11. als Abweichung von „hängt an Scroll" angemerkt. Wer es abschalten will, stoppt die
+  Schleife, sobald `drive` eine Weile 0 ist. `devicePixelRatio` höchstens 2, keine Schatten.
+- **Drohnen-Standbild in vier Breiten (480/960/1200/1600):** Die 1200er (q 76, 23 KB) gibt es nur
+  wegen Handys mit 3-fachem Pixelraster: Dort braucht das Bild ~1080 Pixel, ohne 1200er lud
+  Chrome die 1600er (36 KB). Chrome lädt das Standbild trotz `loading="lazy"` beim ersten
+  Seitenaufbau (die Seite ist kurz genug für die Vorladedistanz), deshalb zählt es zum
+  Erstaufbau-Gewicht. Mit der 1200er bleibt der Zuwachs unter 30 KB.
 - **Luftbild in der Drohnen-Szene:** bewusst **nicht** eingebaut, solange `assets/drohne/luftbild.jpg`
   fehlt (ein fehlendes Bild erzeugt einen 404 in der Konsole). Markup steht unter „Offene Punkte".
 - **Szenen-Titel-Reveal** nutzt anime.js `sync: "play"`: einmal ausgelöst, läuft die Animation
@@ -471,9 +486,16 @@ nur die sichtbare Seite).
   `CHROME_PATH` auf das installierte Chrome. **Wichtig:** `python3 -m http.server` liefert **ohne
   gzip** aus, GitHub Pages mit. Für einen fairen Vorher-Nachher-Vergleich einen Server mit gzip
   nehmen und immer den Median aus drei Läufen vergleichen (Einzelläufe schwanken um bis zu 6 Punkte).
-- **Messwerte V3.4 → V3.5 (Lighthouse Handy, Median aus 3):** mit gzip Performance 96 → 96, LCP
-  2,70 s → 2,70 s. Ohne gzip (python-Server) 95 → 94 und 2,9 s → 3,0 s, weil dort die rohen
-  Dateigrößen zählen. HTML + CSS + JS zusammen 14,4 KB → 20,1 KB (gzip).
+- **Messwerte V3.4 → V3.5 (Lighthouse Handy):** mit gzip Performance 96 → 96, LCP vorher und
+  nachher gleich (2,70 s in einem Lauf, 2,78 s im Prüfer-Lauf mit Median aus 5). Ohne gzip
+  (python-Server) 95 → 94 und 2,93 s → 3,08 s, weil dort die rohen Dateigrößen zählen. HTML +
+  CSS + JS zusammen 15,2 KB → 21,0 KB (gzip). Erstaufbau ohne Video im Prüfer-Lauf +25,7 KB,
+  davon 20,6 KB Drohnen-Standbild (s. „Code-Notizen").
+- **Unabhängiger Prüfer (12.11.2026):** alle 13 Ziel-Kriterien und die Design-Regeln geprüft, kein
+  Blocker. Behoben danach: Sprung Standbild → 3D, Leerlauf der Schleife vor dem Ausklappen,
+  1200er-Standbild fürs Handy, Einrückung bei „124 km" entfernt, Sucher-Schrift kräftiger
+  abgesetzt. Bewusst gelassen: Schweben und Leerlauf-Propeller im Stillstand (Auftrag), roter
+  Filmstreifen an der Kamera (Auftrag: Strichzeichnung in Rot und Ink).
 
 ### Sandbox-Wissen (spart nächstes Mal Zeit)
 - **okmedia.at selbst ist aus der Sandbox nicht erreichbar** (Proxy blockt → `curl` gibt `000`).
