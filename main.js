@@ -869,13 +869,26 @@ async function startDrone(stage) {
     }
   });
 
-  const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+  const UNFOLD_MS = 900;
+  const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? 4 * x * x * x : 1 - (2 - 2 * x) ** 3 / 2);
+  const span = (progress, from, to) => ease((progress * UNFOLD_MS - from) / (to - from));
+  const clamp = (x) => Math.max(0, Math.min(1, x));
   const fold = (joint, folded) => {
     joint.node.quaternion.setFromAxisAngle(joint.axis, joint.angle * folded);
   };
-  const pose = (ms) => {
-    arms.forEach((arm) => fold(arm, 1 - ease(arm.rear ? (ms - 160) / 440 : ms / 420)));
-    blades.forEach((blade) => fold(blade, 1 - ease((ms - 300) / 300)));
+  const pose = (progress) => {
+    arms.forEach((arm) => fold(arm, 1 - (arm.rear ? span(progress, 250, 900) : span(progress, 0, 650))));
+    blades.forEach((blade) => fold(blade, 1 - span(progress, 450, 900)));
+  };
+  const reach = (box) => {
+    const startTop = window.innerHeight * 0.95;
+    const endTop = window.innerHeight * 0.6 - box.height / 2;
+    return clamp((startTop - box.top) / (startTop - endTop));
+  };
+  const rise = (box) => {
+    const from = window.innerHeight * 0.4;
+    const center = box.top + box.height / 2;
+    return clamp((from - center) / (from + box.height / 2));
   };
 
   const fit = () => {
@@ -883,17 +896,18 @@ async function startDrone(stage) {
     if (width) renderer.setSize(width, Math.round(width * 0.75), false);
   };
   const box = stage.getBoundingClientRect();
-  const seen = box.bottom > 0 && box.top < window.innerHeight;
+  const seen = box.top < window.innerHeight * 0.95 && box.bottom > 0;
 
   fit();
-  pose(seen ? 600 : 0);
+  pose(seen ? 1 : 0);
   renderer.render(scene, camera);
   stage.appendChild(canvas);
   stage.classList.add("is-live");
 
   let visible = false;
-  let opened = seen ? performance.now() - 600 : -1;
-  let settled = seen;
+  let started = seen ? performance.now() - UNFOLD_MS : -1;
+  let progress = seen ? 1 : 0;
+  let landed = seen ? performance.now() : -1;
   let raf = 0;
   let last = 0;
   let lastY = window.scrollY;
@@ -901,7 +915,7 @@ async function startDrone(stage) {
   let spin = 0;
   let pitch = 0;
   let pitchSpeed = 0;
-  let clock = 0;
+  let shift = 0;
 
   const frame = (now) => {
     raf = requestAnimationFrame(frame);
@@ -914,29 +928,41 @@ async function startDrone(stage) {
     lastY = y;
     const drive = Math.max(-1, Math.min(1, velocity / 2200));
 
-    if (opened < 0) return;
-    const since = now - opened;
-    if (!settled) {
-      pose(since);
-      settled = since >= 600;
+    const rect = stage.getBoundingClientRect();
+    if (started < 0 && rect.top < window.innerHeight * 0.95) started = now;
+    if (started < 0) return;
+
+    if (progress < 1) {
+      progress = Math.max(progress, clamp((now - started) / UNFOLD_MS), reach(rect));
+      pose(progress);
+      if (progress >= 1) landed = now;
     }
 
-    const flying = since > 600;
-    spin += ((flying ? 6 + Math.abs(drive) * 30 : 0) - spin) * (1 - Math.exp(-dt / 0.45));
+    const flight = landed < 0 ? 0 : (now - landed) / 1000;
+    const air = ease(flight / 1.2);
+    const lift = ease(rise(rect));
+
+    const target = landed < 0 ? 0 : (6 + Math.abs(drive) * 30) * (1 + lift * 0.6);
+    spin += (target - spin) * (1 - Math.exp(-dt / 0.45));
     props.forEach((prop) => {
       prop.phase += spin * dt * prop.turn;
       prop.node.quaternion.setFromAxisAngle(prop.axis, prop.phase);
     });
 
-    const aim = flying ? -drive * 0.14 : 0;
+    const aim = -drive * 0.14 * air + lift * 0.04;
     pitchSpeed += ((aim - pitch) * 38 - pitchSpeed * 10.5) * dt;
     pitch += pitchSpeed * dt;
     craft.rotation.x = pitch;
 
-    clock += dt;
-    const calm = flying ? 1 - Math.abs(drive) : 0;
-    craft.position.y = Math.sin(clock * 1.5) * 0.005 * calm;
-    craft.rotation.z = Math.sin(clock * 0.9) * 0.012 * calm;
+    const calm = air * (1 - Math.abs(drive)) * (1 - lift);
+    craft.position.y = Math.sin(flight * 1.5) * 0.005 * calm;
+    craft.rotation.z = Math.sin(flight * 0.9) * 0.012 * calm;
+
+    const offset = lift * window.innerHeight * 0.6;
+    if (Math.abs(offset - shift) > 0.1) {
+      shift = offset;
+      canvas.style.transform = shift ? `translate3d(0, ${(-shift).toFixed(1)}px, 0)` : "";
+    }
 
     renderer.render(scene, camera);
   };
@@ -946,15 +972,13 @@ async function startDrone(stage) {
     last = 0;
     lastY = window.scrollY;
     velocity = 0;
-    if (visible && opened >= 0) raf = requestAnimationFrame(frame);
+    if (visible) raf = requestAnimationFrame(frame);
   };
 
-  new IntersectionObserver((entries) => {
-    const entry = entries[entries.length - 1];
+  new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
-    if (opened < 0 && entry.intersectionRatio >= 0.45) opened = performance.now();
     sync();
-  }, { threshold: [0, 0.45] }).observe(stage);
+  }).observe(stage);
 
   if ("ResizeObserver" in window) {
     new ResizeObserver(() => {
@@ -967,7 +991,7 @@ async function startDrone(stage) {
 function setupDrone() {
   const stage = $(".drone-stage");
   if (!stage || reducedMotion) return;
-  if (!window.matchMedia("(min-width: 801px)").matches) return;
+  if (navigator.connection?.saveData) return;
   if (!("IntersectionObserver" in window) || !("WebGL2RenderingContext" in window)) return;
 
   const near = new IntersectionObserver((entries) => {
@@ -976,7 +1000,7 @@ function setupDrone() {
     startDrone(stage).catch((error) => {
       console.warn("3D-Drohne konnte nicht geladen werden, das Standbild bleibt stehen.", error);
     });
-  }, { rootMargin: "700px 0px" });
+  }, { rootMargin: `${window.innerHeight}px 0px` });
   near.observe(stage);
 }
 

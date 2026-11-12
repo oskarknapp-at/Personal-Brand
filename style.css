@@ -631,6 +631,7 @@ body.menu-open { overflow: hidden; }
   grid-column: 1 / 9;
   position: relative;
   margin: 0;
+  touch-action: pan-y pinch-zoom;
 }
 
 .drone-still {
@@ -646,6 +647,7 @@ body.menu-open { overflow: hidden; }
   width: 100%;
   aspect-ratio: 4 / 3;
   pointer-events: none;
+  will-change: transform;
 }
 
 .drone-stage.is-live .drone-still { opacity: 0; }
