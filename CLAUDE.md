@@ -21,8 +21,9 @@ Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS
 - Schriften selbst gehostet in `assets/fonts/` (Archivo variable, IBM Plex Mono 400/500/600).
 - **three.js (seit V3.5) ist selbst gehostet**, kein CDN: `assets/vendor/three-drohne.min.js` ist ein
   einmalig gebautes Bündel (s. „3D-Drohne"). Es wird **nur** von `setupDrone()` nachgeladen, nie
-  beim Seitenaufbau, nie am Handy, nie bei `prefers-reduced-motion`.
-- **Alle Animationen ≤ 600 ms.**
+  beim Seitenaufbau, nie bei `prefers-reduced-motion` oder `saveData`. Seit V3.6 auch am Handy.
+- **Alle Animationen ≤ 600 ms.** **Ausnahmen seit V3.6 (Betreiber-Wunsch):** Ausklappen der Drohne
+  900 ms, Bildzählwerk im About 700 bzw. 850 ms. Die Großansicht blendet in 250 ms über.
 - **⚠️ KEIN KOMMENTAR IM AUSGELIEFERTEN CODE (PFLICHT):** `index.html`, `impressum/index.html`,
   `datenschutz/index.html`, `main.js`, `style.css` bleiben **komplett kommentarfrei** — kein
   `<!-- … -->`, kein `/* … */`, kein `//`. **Jede** Erklärung, Begründung oder Notiz gehört in
@@ -47,7 +48,7 @@ Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS
 ## Dateien
 | Datei | Inhalt |
 |---|---|
-| `index.html` | Die gesamte Seite. Szenen: 01 Hero, 02 Fotografie, 03 Drohne, 04 About, 05 Kontakt. (Projekte-Szene, Journey, „Zusammenarbeit" + Projekte 3/4 ausgebaut, s. „Ausgeblendete Inhalte".) |
+| `index.html` | Die gesamte Seite. Szenen: 01 Hero, 02 Fotografie, 03 Drohne, 04 About, 05 Kontakt. Das Poster des Showreels steht als WebP-Daten-URI im `<video>` (480×270, 8 KB). (Projekte-Szene, Journey, „Zusammenarbeit" + Projekte 3/4 ausgebaut, s. „Ausgeblendete Inhalte".) |
 | `main.js` | Gesamtes Verhalten, in nummerierte Abschnitte (1–6) gegliedert – siehe unten. |
 | `style.css` | Gesamtes Styling. Abschnitte per `/* ---------- … ---------- */`. Design-Tokens in `:root`. |
 | `impressum/`, `datenschutz/` | Rechtstexte, eigene `index.html`, teilen sich `../style.css`. |
@@ -71,7 +72,8 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
    ohne Reload. `access_key` steht als hidden input in `index.html` (öffentlich, kein Secret).
    4b. `setupEmailCheck()` + `editDistance()` / `suggestDomain()` / `emailProblem()` – Live-Prüfung
    des E-Mail-Feldes (grüner Haken / roter Hinweis / Tippfehler-Vorschlag), s. „Code-Notizen".
-   4c. `CLAPPER` – SVG-Klappe, die `setupForm()` nach erfolgreichem Versand in die Statuszeile setzt.
+   4c. `buildSlate()` + `SLATE_ARM` – beschriftete Klappe (PROD, SZENE, TAKE, DATUM), die `setupForm()`
+   beim Absenden unter die Statuszeile setzt und bei Erfolg zuschlagen lässt.
 5. `tcToFrames(tc, fps)` / `framesToTc(total, fps)` – Timecode-Hilfen, Format `HH:MM:SS:FF`. `fps` ist
    Parameter, Standard `FPS = 25` (echte Framerate von `show_reel.mp4`, s. „Code-Notizen").
 6. `initMotion({…anime})` – alle Animationen (Hero-Timeline, Szenentitel, Timecode-Counter,
@@ -81,12 +83,17 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
 8. `setupViewfinder()` – Sucher-Overlay im Hero (`VIEWFINDER`-Markup, Live-Timecode, REC, Akku).
 9. `setupReel()` – Filmkamera am linken Rand als Scroll-Fortschritt mit Szenen-Markern (`REEL`-Markup).
 10. `setupDrone()` + `startDrone()` – lädt three.js und das GLB erst in der Nähe der Drohnen-Szene
-    und steuert Ausklappen, Propeller, Neigung und Schweben.
+    und steuert Ausklappen, Propeller, Neigung, Schweben und Abheben.
+11. `sunIsUp()` + `setupDaytime()` – Hero-Slug zeigt `NACHT`, wenn in Melk die Sonne unten ist.
+12. `setupCounter()` – Bildzählwerk: die Zahl `.about-number` rollt einmalig auf ihren Wert.
+13. `setupLightbox()` + `largestSource()` – Großansicht der Fotos im nativen `<dialog>`.
 
 ## Von JS erzeugte Elemente (stehen nicht im HTML)
 Ohne JS gibt es keines davon, deshalb auch keine toten Elemente: `.vf` (Sucher, in `.hero-frame`),
-`.reel` (Filmkamera, am Ende von `<body>`, dazu Klasse `has-reel` auf `<html>`), `.clapper` (Klappe
-in `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), `.field-check`.
+`.reel` (Filmkamera, am Ende von `<body>`, dazu Klasse `has-reel` auf `<html>`), `.slate` (Klappe,
+nach `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), `.field-check`,
+`.lightbox` (Dialog am Ende von `<body>`, dazu Klasse `is-locked` auf `<html>` solange offen),
+`.counter-reel` (in `.about-number`), `data-time="nacht"` am Hero-Szenenkopf.
 
 ## JS-Hooks (data-Attribute in HTML)
 `data-age`, `data-split` (Text→Buchstaben), `data-tc` (Timecode), `data-yt` (YouTube-ID), `data-animate` (Scroll-Reveal).
@@ -105,7 +112,7 @@ in `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), 
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.5` (V3.5 / `v=3.5`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.6` (V3.6 / `v=3.6`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -184,6 +191,10 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   `.check-bang`/`.check-dot` werden per `display` getauscht, der Haken zeichnet sich über
   `stroke-dasharray`/`stroke-dashoffset` in 260 ms selbst (reines CSS, **kein anime.js nötig** →
   funktioniert auch bei CDN-Ausfall; bei `prefers-reduced-motion` steht er sofort da).
+- **Szenenkopf mit NACHT (seit V3.6):** „SZENE 01 / EXT. MOSTVIERTEL / NACHT" hat 35 Zeichen,
+  also 49 mit Timecode. Nur `.scene-head[data-time="nacht"]` bekommt deshalb im `≤800px`-Block den
+  Teiler **35** und die Untergrenze **0,49 rem**. Bei 320 px stehen 288 px zur Verfügung, die Zeile
+  braucht mit 0,49 rem 281 px (mit 0,52 rem wären es 298 px gewesen). Die anderen Köpfe bleiben bei 33.
 - **Szenenkopf bleibt auf dem Handy einzeilig (seit V3.1):** Slug und Timecode dürfen nie
   untereinander rutschen. Deshalb im `≤800px`-Block `flex-wrap: nowrap` + `white-space: nowrap` und
   eine **rechnende** Schriftgröße:
@@ -226,13 +237,44 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   dem Marker, damit nichts über den Inhalt ragt. Am Seitenende blendet der Filmstreifen aus (Film
   ist durch). Bei reduced motion drehen Speichen und Perforation nicht, Füllstand und Positions-
   punkt zeigen den Fortschritt aber weiter an (Information, keine Animation).
-- **Klappe (`CLAPPER`):** reines CSS (`clapper-shut`, 80 ms Verzögerung + 300 ms), kein anime.js.
-  Der **Grundzustand ist geschlossen**, nur die Animation startet offen. Dadurch steht sie bei
-  reduced motion (globales `animation: none`) sofort geschlossen da. Sie hängt in `.form-status`
-  und verschwindet von selbst, sobald der nächste Status per `textContent` gesetzt wird.
-- **Drohnen-Szene, Laden:** `setupDrone()` startet nur bei ≥ 801 px, ohne reduced motion und mit
-  WebGL2. Ein `IntersectionObserver` mit 700 px Vorlauf lädt dann Bündel und GLB. Bis dahin, am
-  Handy, bei reduced motion und ohne JS steht das Standbild (`.drone-still`). `startDrone()` holt
+- **Klappe (`.slate`, seit V3.6 beschriftet):** Betreiber-Vorgabe: **vor dem Absenden nicht
+  sichtbar**, sie erscheint erst beim Senden (offen), schlägt bei Erfolg zu (`slate-shut`, 80 ms
+  Verzögerung + 300 ms) und bleibt bei Fehlern offen. Texte nur per `textContent` (Name höchstens
+  40 Zeichen, CSS kürzt mit Auslassungszeichen, leer ergibt `OHNE TITEL`). Datum per `Intl` in
+  Europe/Vienna. **TAKE zählt erfolgreiche Sendungen** (erst nach einem Erfolg steht TAKE 2, ein
+  Fehlversuch zählt nicht). Bei reduced motion steht `.is-shut` sofort geschlossen da. Sie hängt
+  **nach** `.form-status`, nicht darin, weil die Statuszeile per `textContent` überschrieben wird.
+- **Tageszeit im Slug (`sunIsUp`):** Sonnenhöhe aus dem aktuellen UTC-Zeitpunkt und Melk
+  (48,23° N, 15,33° O), vereinfachte Formel (USNO/NOAA), Grenze −0,833°. Weil ein Zeitpunkt
+  weltweit gleich ist, stimmt das ohne Zeitzonen-Rechnung für Europe/Vienna, auch für Besucher in
+  anderen Zeitzonen. Gemessen am 12.11.: auf 07:01, unter 16:25. Ohne JS bleibt `TAG`.
+- **Bildzählwerk (`setupCounter`):** je Ziffer eine Rolle (`.counter-reel`, `overflow-y: clip`),
+  Zehner eine Umdrehung in 700 ms, Einer zwei Umdrehungen in 850 ms, Web Animations API mit kleinem
+  Überschwingen am Ende. Die Breite jeder Rolle wird auf die Breite der **Endziffer** gemessen, und
+  zwar erneut nach `document.fonts.ready` (vor dem Laden der Schrift misst man die Ersatzschrift,
+  am Handy lag die Zahl dann 42 px daneben). Die Zahl ist `aria-hidden`, der echte Wert steht im
+  Fließtext. Ohne JS und bei reduced motion bleibt der Text unverändert.
+- **Großansicht (`setupLightbox`):** jedes Foto ist ein `<a class="gallery-link">` auf das JPG
+  (ohne JS ein normaler Link). Mit JS öffnet `showModal()` den Dialog, gezeigt wird die größte WebP
+  aus dem `srcset`. `history.pushState` beim Öffnen, `popstate` schließt, daher schließt der
+  Zurück-Knopf am Handy die Großansicht. Wischen per Pointer-Events (ab 50 px). Nach einem Wischen
+  wird der folgende `click` höchstens 400 ms lang geschluckt, sonst würde der nächste echte Tipp
+  verloren gehen (Prüfer-Befund). Am Handy sind die Pfeil-Knöpfe aus, dort wird gewischt.
+- **Showreel (seit V3.6):** 2,4 MB statt 5,78 MB (Betreiber-Vorgabe), H.264 zwei Durchgänge
+  `preset veryslow`, 612 kbit/s, 1280×720, 25 fps, 772 Frames, `+faststart`, ohne Datenspur (eine
+  Tonspur gab es nie). SSIM zum Original 0,979. Befehl:
+  `ffmpeg -i ORIGINAL -map 0:v:0 -an -dn -c:v libx264 -preset veryslow -tune film -b:v 612k
+  -maxrate 1836k -bufsize 2448k -pass 1/2 -profile:v high -pix_fmt yuv420p -r 25 -movflags +faststart`.
+  **Poster als Daten-URI, nicht als Datei:** Als eigene Datei (52 KB) verschlechterte es das
+  LCP im Lighthouse von 2,70 auf 3,00 s, weil es mit dem Video um Bandbreite konkurriert. Inline
+  mit 480 px und q 50 bleibt das LCP bei 2,71 s.
+- **Drohnen-Szene, Laden:** `setupDrone()` startet ohne reduced motion, ohne `saveData` und mit
+  WebGL2, **seit V3.6 auf jeder Breite**. Ein `IntersectionObserver` mit einer Fensterhöhe Vorlauf,
+  **höchstens 900 px**, lädt dann Bündel und GLB. Die Deckelung ist nötig, weil bei 2560×1440 sonst
+  schon beim Seitenaufbau geladen wurde. Bis dahin, bei reduced motion, `saveData`, Ladefehler und
+  ohne JS steht das Standbild (`.drone-still`). Am Handy gemessen: 60 fps bei 4-facher
+  CPU-Drosselung (Mac-GPU). Das Canvas hat `pointer-events: none`, die Bühne
+  `touch-action: pan-y pinch-zoom`, Wischen über der Drohne scrollt also die Seite. `startDrone()` holt
   sich den WebGL-Kontext **selbst und vor dem Laden von three.js** mit
   `failIfMajorPerformanceCaveat: true`: Gibt es nur Software-Rendering (kein Grafikchip, nachgestellt mit Chrome
   `--disable-gpu`), bleibt still das Standbild stehen, ohne Download und ohne Konsolenfehler.
@@ -251,8 +293,21 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   das Ausklappen. Nur wenn die Szene noch außerhalb liegt (der Normalfall dank 700 px Vorlauf),
   startet es eingeklappt und klappt beim Reinscrollen aus. So sieht nie jemand
   „ausgeklappt → eingeklappt → ausgeklappt".
-- **Drohnen-Szene, Bewegung:** Ausklappen einmalig in 600 ms ab 45 % Sichtbarkeit (vordere Arme
-  0 bis 420 ms, hintere 160 bis 600 ms, Blätter 300 bis 600 ms). Danach Propeller mit
+- **Drohnen-Szene, Ausklappen (seit V3.6):** 900 ms mit kubischem ease-in-out (vordere Arme 0 bis
+  650 ms, hintere 250 bis 900 ms, Blätter 450 bis 900 ms). Start, sobald die Bühne bei 95 % der
+  Fensterhöhe von unten ins Bild kommt. Der Fortschritt ist das Maximum aus Zeit und
+  Scroll-Position, wobei die Scroll-Position 100 % erreicht, wenn die Bühnenmitte bei 60 % der
+  Fensterhöhe steht. So ist es auch beim schnellen Wischen vor der Bildmitte fertig.
+  **Ursache des alten Sprungs nach oben:** Die Schwebe-Uhr lief schon ab Beginn des Ausklappens,
+  und die Amplitude schaltete bei 600 ms hart von 0 auf 1. Die Höhe setzte so mit
+  `sin(0,6 s × 1,5) × 5 mm` = 3,9 mm auf einmal ein. Jetzt startet die Uhr am Ende des Ausklappens
+  bei 0 und die Amplitude blendet über 1,2 s ein (größter Schritt 0,2 mm pro Frame).
+- **Drohnen-Szene, Abheben (seit V3.6):** `lift` hängt nur an der Scroll-Position (ab Bühnenmitte
+  über 40 % der Fensterhöhe bis Unterkante am oberen Rand), also umkehrbar. Verschoben wird das ganze
+  transparente Canvas per `translate3d` um bis zu 30 % der Fensterhöhe, deshalb gibt es keine
+  Canvas-Kante. Ab 55 % `lift` blendet es aus, damit die Drohne nicht hart unter die deckende Nav
+  rutscht. Propeller drehen dabei bis zu 60 % schneller.
+- **Drohnen-Szene, Bewegung (Stand V3.5):** Ausklappen damals einmalig in 600 ms ab 45 % Sichtbarkeit. Danach Propeller mit
   Leerlauf-Drehzahl, Drehzahl und Neigung (max. rund 8°) folgen der geglätteten
   Scroll-Geschwindigkeit, im Stillstand leichtes Schweben. **Die Render-Schleife läuft nur, solange
   die Szene im Bild ist und das Ausklappen begonnen hat** (vorher wird nichts gezeichnet, gemessen:
@@ -364,15 +419,20 @@ Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Fo
 nur die sichtbare Seite).
 
 ### Aktueller Stand (Stand 2026-11-12)
+- **V3.6 (live seit 2026-11-12, Squash-Merge von `feature/v3.6`):** Drohnen-Fix (kein Sprung,
+  früher, 900 ms), Drohne am Handy in 3D, Abheben, Showreel 2,4 MB mit Poster, NACHT im Slug,
+  Bildzählwerk, beschriftete Klappe beim Senden, Großansicht der Fotos. Sicherungspunkt davor:
+  Git-Tag `vor-v3.6` (auf `96f471e`, auch auf GitHub). Details unter „Code-Notizen".
 - **Bewegung (V3.5, live seit 2026-11-12, Squash-Merge von `feature/bewegung`):** Sucher-Overlay im Hero, Filmkamera als
   Scroll-Fortschritt (Desktop), Klappe im Kontaktformular, neue Szene 03 Drohne mit 3D-Modell.
   Details unter „Code-Notizen" und „3D-Drohne". Sicherungspunkt vor dem Umbau: Git-Tag
   `vor-animationen` (auf `5501cac`, auch auf GitHub).
-- **Live-Version:** **V3.5** (`v=3.5`, Bewegung, s. o.). **Versionsschema seit V3.0:
+- **Live-Version:** **V3.6** (`v=3.6`, s. o.). **Versionsschema seit V3.0:
   Schritte von 0.1** (V2.9 → V3.0 → V3.1 …), s. „Konventionen". (Ablauf: … → V2.9 =
   E-Mail-Live-Prüfung → V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig →
   V3.2 = Papierton fast weiß → V3.3 = Untertitel aus → V3.4 = Projekte-Szene ausgebaut →
-  V3.5 = Bewegung: Sucher-Overlay, Filmkamera, Drohnen-Szene, Klappe.)
+  V3.5 = Bewegung: Sucher-Overlay, Filmkamera, Drohnen-Szene, Klappe → V3.6 = Drohnen-Fix,
+  Drohne am Handy, Abheben, Showreel klein, Slug-Tageszeit, Zählwerk, Klappe, Großansicht.)
 - **⚠️ Projekte-Szene ist ausgebaut (seit V3.4, Datenschutz):** Die zwei Kurzfilme („Was kommt
   danach?" / Postcard-Challenge und ALLEIN) sind **nicht** auf der Seite, solange die
   Datenschutzvereinbarungen mit den beteiligten Personen nicht unterschrieben sind. Der komplette
@@ -415,10 +475,10 @@ nur die sichtbare Seite).
   behalten, Accessibility bleibt daher bei 92. **Performance-Hebel liegen beim Betreiber:**
   Hero-`show_reel.mp4` ist 3,8 MB (LCP-Element, LCP 3,1 s) → Kompression + `poster`-Still nötig
   (in Sandbox mangels ffmpeg nicht machbar); Cache-TTL/CSP/HSTS sind GitHub-Pages-Serverconfig.
-- **Hero-Showreel:** `assets/show_reel.mp4` (6,66 MB, Datei ist 1280×720/16:9, quadratische Pixel)
+- **Hero-Showreel:** `assets/show_reel.mp4` (seit V3.6 2,4 MB, 1280×720/16:9, 25 fps, Poster inline, s. „Code-Notizen“)
   läuft als `<video autoplay muted loop playsinline>` — stumm, automatisch, Endlosschleife, selbst
   gehostet (kein externer Request, DSGVO-konform). `main.js`/`setupHeroVideo()` stoppt die
-  Wiedergabe bei `prefers-reduced-motion` (erster Frame als Standbild). **Kein Poster.**
+  Wiedergabe bei `prefers-reduced-motion` (erster Frame als Standbild). Poster seit V3.6.
   Frame-Verhältnis: **16:9 (Originalformat, kein Zuschnitt)** — Betreiber wollte das Video im
   Originalformat. CSS: `.hero-frame img, .hero-frame video { aspect-ratio: 16/9; height: auto;
   object-fit: cover }` (`height: auto` überschreibt den `width`/`height`-Attribut-Hint am
@@ -440,6 +500,10 @@ nur die sichtbare Seite).
   (s. o.). Das frühere `<img fetchpriority="high">` gibt es dort nicht mehr.
 
 ### Offene Punkte (TODO)
+- **anime.js kommt beim Seitenaufbau vom CDN (`cdn.jsdelivr.net`):** Das ist ein externer Request
+  und widerspricht der DSGVO-Regel oben. Bestand schon vor V3.6 (Prüfer-Hinweis vom 12.11.).
+  Lösung wäre, anime.js selbst zu hosten wie three.js. Betreiber entscheidet.
+- **Drohne am echten Handy:** gemessen nur mit Chrome und Mac-GPU. Betreiber testet am iPhone.
 - **Luftbild für die Drohnen-Szene (optional, Betreiber liefert):** Datei als
   `assets/drohne/luftbild.jpg` ablegen (dazu WebP-Varianten nach der Bild-Konvention), dann diesen
   Block in `index.html` nach `</div>` von `.drone-grid` einsetzen und Breite/Höhe eintragen:
@@ -532,6 +596,17 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-11-12 — V3.6: Drohnen-Fix, Drohne am Handy, fünf Details:** Auftrag „Prompt Opus –
+  Website V3.6". **(A)** Ursache des Sprungs gefunden und belegt (Log vorher 3,916 mm in einem
+  Frame, nachher höchstens 0,2 mm), Ausklappen früher und in 900 ms. **(B)** Drohne auch am Handy
+  in 3D, 60 fps bei 4-facher Drosselung, Rückfall bei `saveData`. **(C)** Abheben an die
+  Scroll-Position gekoppelt. **(F)** Showreel 5,78 MB → 2,4 MB, Poster inline. **(H)** NACHT im
+  Hero-Slug nach Sonnenstand in Melk. **(D)** Bildzählwerk. **(E)** Klappe erscheint erst beim
+  Senden (Betreiber-Vorgabe, abweichend vom Auftrag, der sie vorab zeigen wollte). **(G)**
+  Großansicht der Fotos. Lighthouse Handy (gzip, Median aus 3): 96 → 96, LCP 2,78 s → 2,71 s.
+  Unabhängiger Prüfer: alle Kriterien bestanden bis auf einen verschluckten Tipp nach dem Wischen;
+  der und vier kleinere Befunde (3D-Vorlauf bei 2560 px, Abheben zu schnell, Take-Zählung, Pfeile
+  am Handy) sind behoben. Version 3.5 → 3.6.
 - **2026-11-12 — Bewegung: Filmsprache-Animationen (V3.5):** Auftrag des Betreibers nach einem
   Brainstorming: Die Seite ist wie ein Film aufgebaut, soll sich aber auch so bewegen, ruhig und
   professionell. Vier Bausteine, je ein Commit auf `feature/bewegung`:

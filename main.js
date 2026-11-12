@@ -420,15 +420,50 @@ function setupEmailCheck() {
   };
 }
 
-const CLAPPER =
-  '<svg class="clapper" viewBox="0 0 34 28" aria-hidden="true" focusable="false">' +
-  '<rect class="clapper-board" x="2" y="12.5" width="30" height="13.5" rx="1.2"/>' +
-  '<path class="clapper-rule" d="M6 18.5h22M6 22h13"/>' +
-  '<g class="clapper-base"><rect x="2" y="8.5" width="30" height="4"/>' +
-  '<path d="M9 8.5l-3 4M17 8.5l-3 4M25 8.5l-3 4"/></g>' +
-  '<g class="clapper-arm"><rect x="2" y="4.5" width="30" height="4"/>' +
-  '<path d="M6 4.5l3 4M14 4.5l3 4M22 4.5l3 4"/></g>' +
+const SLATE_ARM =
+  '<svg class="slate-arm" viewBox="0 0 220 22" preserveAspectRatio="none" focusable="false">' +
+  '<rect x="0" y="0" width="220" height="22"/>' +
+  '<path d="M18 0h20l-14 22H4zM62 0h20l-14 22H48zM106 0h20l-14 22H92zM150 0h20l-14 22h-20zM194 0h20l-14 22h-20z"/>' +
   "</svg>";
+
+function buildSlate() {
+  const slate = document.createElement("div");
+  slate.className = "slate";
+  slate.setAttribute("aria-hidden", "true");
+  slate.insertAdjacentHTML("afterbegin", SLATE_ARM);
+
+  const board = document.createElement("div");
+  board.className = "slate-board";
+  const row = (...cells) => {
+    const line = document.createElement("div");
+    line.className = "slate-row";
+    cells.forEach((cell) => line.appendChild(cell));
+    board.appendChild(line);
+    return line;
+  };
+  const cell = (label, value) => {
+    const box = document.createElement("span");
+    box.className = "slate-cell";
+    const key = document.createElement("span");
+    key.className = "slate-key";
+    key.textContent = label;
+    const text = document.createElement("span");
+    text.className = "slate-value";
+    text.textContent = value;
+    box.append(key, text);
+    return { box, text };
+  };
+
+  const prod = cell("PROD", "");
+  const scene = cell("SZENE", "05");
+  const take = cell("TAKE", "1");
+  const date = cell("DATUM", "");
+  row(prod.box).classList.add("slate-row--wide");
+  row(scene.box, take.box, date.box);
+  slate.appendChild(board);
+
+  return { slate, name: prod.text, take: take.text, date: date.text };
+}
 
 function setupForm() {
   const form = $(".contact-form");
@@ -436,6 +471,14 @@ function setupForm() {
 
   const status = $(".form-status", form);
   const submit = $(".submit", form);
+  const slate = buildSlate();
+  const today = new Intl.DateTimeFormat("de-AT", {
+    timeZone: "Europe/Vienna",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  let takes = 1;
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -461,6 +504,12 @@ function setupForm() {
       return;
     }
 
+    slate.name.textContent = form.name.value.trim().slice(0, 40) || "OHNE TITEL";
+    slate.take.textContent = String(takes);
+    slate.date.textContent = today.format(new Date());
+    slate.slate.classList.remove("is-shut");
+    if (!slate.slate.isConnected) status.after(slate.slate);
+
     submit.disabled = true;
     status.textContent = "SENDET ...";
 
@@ -474,8 +523,9 @@ function setupForm() {
       if (!data.success) throw new Error(data.message);
 
       status.textContent = "GESENDET / Is im Kasten.";
-      status.insertAdjacentHTML("afterbegin", CLAPPER);
       status.dataset.state = "sent";
+      slate.slate.classList.add("is-shut");
+      takes += 1;
       form.reset();
     } catch {
       status.dataset.state = "error";
@@ -869,13 +919,26 @@ async function startDrone(stage) {
     }
   });
 
-  const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
+  const UNFOLD_MS = 900;
+  const ease = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x < 0.5 ? 4 * x * x * x : 1 - (2 - 2 * x) ** 3 / 2);
+  const span = (progress, from, to) => ease((progress * UNFOLD_MS - from) / (to - from));
+  const clamp = (x) => Math.max(0, Math.min(1, x));
   const fold = (joint, folded) => {
     joint.node.quaternion.setFromAxisAngle(joint.axis, joint.angle * folded);
   };
-  const pose = (ms) => {
-    arms.forEach((arm) => fold(arm, 1 - ease(arm.rear ? (ms - 160) / 440 : ms / 420)));
-    blades.forEach((blade) => fold(blade, 1 - ease((ms - 300) / 300)));
+  const pose = (progress) => {
+    arms.forEach((arm) => fold(arm, 1 - (arm.rear ? span(progress, 250, 900) : span(progress, 0, 650))));
+    blades.forEach((blade) => fold(blade, 1 - span(progress, 450, 900)));
+  };
+  const reach = (box) => {
+    const startTop = window.innerHeight * 0.95;
+    const endTop = window.innerHeight * 0.6 - box.height / 2;
+    return clamp((startTop - box.top) / (startTop - endTop));
+  };
+  const rise = (box) => {
+    const from = window.innerHeight * 0.4;
+    const center = box.top + box.height / 2;
+    return clamp((from - center) / (from + box.height / 2));
   };
 
   const fit = () => {
@@ -883,17 +946,18 @@ async function startDrone(stage) {
     if (width) renderer.setSize(width, Math.round(width * 0.75), false);
   };
   const box = stage.getBoundingClientRect();
-  const seen = box.bottom > 0 && box.top < window.innerHeight;
+  const seen = box.top < window.innerHeight * 0.95 && box.bottom > 0;
 
   fit();
-  pose(seen ? 600 : 0);
+  pose(seen ? 1 : 0);
   renderer.render(scene, camera);
   stage.appendChild(canvas);
   stage.classList.add("is-live");
 
   let visible = false;
-  let opened = seen ? performance.now() - 600 : -1;
-  let settled = seen;
+  let started = seen ? performance.now() - UNFOLD_MS : -1;
+  let progress = seen ? 1 : 0;
+  let landed = seen ? performance.now() : -1;
   let raf = 0;
   let last = 0;
   let lastY = window.scrollY;
@@ -901,7 +965,7 @@ async function startDrone(stage) {
   let spin = 0;
   let pitch = 0;
   let pitchSpeed = 0;
-  let clock = 0;
+  let shift = 0;
 
   const frame = (now) => {
     raf = requestAnimationFrame(frame);
@@ -914,29 +978,42 @@ async function startDrone(stage) {
     lastY = y;
     const drive = Math.max(-1, Math.min(1, velocity / 2200));
 
-    if (opened < 0) return;
-    const since = now - opened;
-    if (!settled) {
-      pose(since);
-      settled = since >= 600;
+    const rect = stage.getBoundingClientRect();
+    if (started < 0 && rect.top < window.innerHeight * 0.95) started = now;
+    if (started < 0) return;
+
+    if (progress < 1) {
+      progress = Math.max(progress, clamp((now - started) / UNFOLD_MS), reach(rect));
+      pose(progress);
+      if (progress >= 1) landed = now;
     }
 
-    const flying = since > 600;
-    spin += ((flying ? 6 + Math.abs(drive) * 30 : 0) - spin) * (1 - Math.exp(-dt / 0.45));
+    const flight = landed < 0 ? 0 : (now - landed) / 1000;
+    const air = ease(flight / 1.2);
+    const lift = ease(rise(rect));
+
+    const target = landed < 0 ? 0 : (6 + Math.abs(drive) * 30) * (1 + lift * 0.6);
+    spin += (target - spin) * (1 - Math.exp(-dt / 0.45));
     props.forEach((prop) => {
       prop.phase += spin * dt * prop.turn;
       prop.node.quaternion.setFromAxisAngle(prop.axis, prop.phase);
     });
 
-    const aim = flying ? -drive * 0.14 : 0;
+    const aim = -drive * 0.14 * air + lift * 0.04;
     pitchSpeed += ((aim - pitch) * 38 - pitchSpeed * 10.5) * dt;
     pitch += pitchSpeed * dt;
     craft.rotation.x = pitch;
 
-    clock += dt;
-    const calm = flying ? 1 - Math.abs(drive) : 0;
-    craft.position.y = Math.sin(clock * 1.5) * 0.005 * calm;
-    craft.rotation.z = Math.sin(clock * 0.9) * 0.012 * calm;
+    const calm = air * (1 - Math.abs(drive)) * (1 - lift);
+    craft.position.y = Math.sin(flight * 1.5) * 0.005 * calm;
+    craft.rotation.z = Math.sin(flight * 0.9) * 0.012 * calm;
+
+    const offset = lift * window.innerHeight * 0.3;
+    if (Math.abs(offset - shift) > 0.1) {
+      shift = offset;
+      canvas.style.transform = shift ? `translate3d(0, ${(-shift).toFixed(1)}px, 0)` : "";
+      canvas.style.opacity = lift > 0.55 ? (1 - ease((lift - 0.55) / 0.45)).toFixed(3) : "";
+    }
 
     renderer.render(scene, camera);
   };
@@ -946,15 +1023,13 @@ async function startDrone(stage) {
     last = 0;
     lastY = window.scrollY;
     velocity = 0;
-    if (visible && opened >= 0) raf = requestAnimationFrame(frame);
+    if (visible) raf = requestAnimationFrame(frame);
   };
 
-  new IntersectionObserver((entries) => {
-    const entry = entries[entries.length - 1];
+  new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
-    if (opened < 0 && entry.intersectionRatio >= 0.45) opened = performance.now();
     sync();
-  }, { threshold: [0, 0.45] }).observe(stage);
+  }).observe(stage);
 
   if ("ResizeObserver" in window) {
     new ResizeObserver(() => {
@@ -967,7 +1042,7 @@ async function startDrone(stage) {
 function setupDrone() {
   const stage = $(".drone-stage");
   if (!stage || reducedMotion) return;
-  if (!window.matchMedia("(min-width: 801px)").matches) return;
+  if (navigator.connection?.saveData) return;
   if (!("IntersectionObserver" in window) || !("WebGL2RenderingContext" in window)) return;
 
   const near = new IntersectionObserver((entries) => {
@@ -976,17 +1051,246 @@ function setupDrone() {
     startDrone(stage).catch((error) => {
       console.warn("3D-Drohne konnte nicht geladen werden, das Standbild bleibt stehen.", error);
     });
-  }, { rootMargin: "700px 0px" });
+  }, { rootMargin: `${Math.min(window.innerHeight, 900)}px 0px` });
   near.observe(stage);
 }
 
+function sunIsUp(date = new Date()) {
+  const rad = Math.PI / 180;
+  const lat = 48.23 * rad;
+  const lon = 15.33;
+  const days = date.getTime() / 86400000 - 10957.5;
+  const anomaly = (357.529 + 0.98560028 * days) * rad;
+  const meanLon = 280.459 + 0.98564736 * days;
+  const eclLon = (meanLon + 1.915 * Math.sin(anomaly) + 0.02 * Math.sin(2 * anomaly)) * rad;
+  const tilt = (23.439 - 0.00000036 * days) * rad;
+  const ascension = Math.atan2(Math.cos(tilt) * Math.sin(eclLon), Math.cos(eclLon));
+  const declination = Math.asin(Math.sin(tilt) * Math.sin(eclLon));
+  const sidereal = (18.697374558 + 24.06570982441908 * days) * 15;
+  const hourAngle = (sidereal + lon) * rad - ascension;
+  const altitude = Math.asin(
+    Math.sin(lat) * Math.sin(declination) + Math.cos(lat) * Math.cos(declination) * Math.cos(hourAngle),
+  );
+  return altitude / rad > -0.833;
+}
+
+function setupDaytime() {
+  const head = $("#start .scene-head");
+  const slug = head && $(".slug", head);
+  if (!slug || sunIsUp()) return;
+  slug.textContent = slug.textContent.replace(/TAG$/, "NACHT");
+  head.dataset.time = "nacht";
+}
+
+function setupCounter() {
+  const number = $(".about-number");
+  if (!number || reducedMotion || !("IntersectionObserver" in window)) return;
+  const digits = number.textContent.trim().split("");
+  if (!digits.length || !digits.every((digit) => /\d/.test(digit))) return;
+
+  number.textContent = "";
+  number.classList.add("is-counter");
+  const reels = digits.map((digit, index) => {
+    const steps = (index + 1) * 10 + Number(digit);
+    const reel = document.createElement("span");
+    reel.className = "counter-reel";
+    const strip = document.createElement("span");
+    strip.className = "counter-strip";
+    for (let n = 0; n <= steps; n += 1) {
+      const face = document.createElement("span");
+      face.textContent = String(n % 10);
+      strip.appendChild(face);
+    }
+    reel.appendChild(strip);
+    number.appendChild(reel);
+    return { reel, strip, steps, digit, duration: index === digits.length - 1 ? 850 : 700 };
+  });
+
+  const measure = () => {
+    const size = parseFloat(getComputedStyle(number).fontSize) || 1;
+    reels.forEach(({ reel, digit }) => {
+      const probe = document.createElement("span");
+      probe.className = "counter-probe";
+      probe.textContent = digit;
+      number.appendChild(probe);
+      reel.style.width = `${(probe.getBoundingClientRect().width / size).toFixed(3)}em`;
+      probe.remove();
+    });
+  };
+  measure();
+  document.fonts?.ready.then(measure);
+
+  const roll = () => {
+    reels.forEach(({ strip, steps, duration }) => {
+      const end = `translateY(${-steps}em)`;
+      strip.animate(
+        [
+          { transform: "translateY(0)", easing: "cubic-bezier(0.45, 0, 0.25, 1)" },
+          { transform: `translateY(${-(steps + 0.08)}em)`, offset: 0.88, easing: "ease-out" },
+          { transform: end },
+        ],
+        { duration, fill: "forwards" },
+      );
+      strip.style.transform = end;
+    });
+  };
+
+  const watch = new IntersectionObserver((entries) => {
+    if (!entries.some((entry) => entry.isIntersecting)) return;
+    watch.disconnect();
+    roll();
+  }, { threshold: 0.3 });
+  watch.observe(number);
+}
+
+const LIGHTBOX =
+  '<dialog class="lightbox" aria-label="Großansicht">' +
+  '<figure class="lightbox-figure">' +
+  '<img class="lightbox-img" alt="">' +
+  '<figcaption class="lightbox-caption"><span class="lightbox-count"></span><span class="lightbox-alt"></span></figcaption>' +
+  "</figure>" +
+  '<button class="lightbox-btn lightbox-close" type="button">SCHLIESSEN</button>' +
+  '<button class="lightbox-btn lightbox-prev" type="button" aria-label="Vorheriges Foto">&larr;</button>' +
+  '<button class="lightbox-btn lightbox-next" type="button" aria-label="Nächstes Foto">&rarr;</button>' +
+  "</dialog>";
+
+function largestSource(link) {
+  const source = $("source", link);
+  const best = (source?.getAttribute("srcset") || "")
+    .split(",")
+    .map((entry) => entry.trim().split(/\s+/))
+    .filter(([url, width]) => url && width)
+    .sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))[0];
+  return best ? best[0] : link.getAttribute("href");
+}
+
+function setupLightbox() {
+  const links = $$(".gallery-link");
+  if (!links.length || !("HTMLDialogElement" in window)) return;
+
+  document.body.insertAdjacentHTML("beforeend", LIGHTBOX);
+  const dialog = $(".lightbox");
+  const img = $(".lightbox-img", dialog);
+  const count = $(".lightbox-count", dialog);
+  const caption = $(".lightbox-alt", dialog);
+  const pad = (n) => String(n).padStart(2, "0");
+  const photos = links.map((link) => ({ link, src: largestSource(link), alt: $("img", link)?.alt || "" }));
+  let current = 0;
+  let opener = null;
+
+  const preload = (index) => {
+    const photo = photos[(index + photos.length) % photos.length];
+    const probe = new Image();
+    probe.src = photo.src;
+  };
+
+  const show = (index) => {
+    current = (index + photos.length) % photos.length;
+    const photo = photos[current];
+    count.textContent = `${pad(current + 1)} / ${pad(photos.length)}`;
+    caption.textContent = photo.alt;
+    img.alt = photo.alt;
+    if (img.getAttribute("src") !== photo.src) {
+      dialog.classList.add("is-loading");
+      img.src = photo.src;
+    }
+    preload(current + 1);
+    preload(current - 1);
+  };
+
+  img.addEventListener("load", () => dialog.classList.remove("is-loading"));
+  img.addEventListener("error", () => dialog.classList.remove("is-loading"));
+
+  const open = (index, link) => {
+    opener = link;
+    show(index);
+    dialog.showModal();
+    document.documentElement.classList.add("is-locked");
+    history.pushState({ lightbox: true }, "");
+  };
+
+  const requestClose = () => {
+    if (history.state?.lightbox) history.back();
+    else if (dialog.open) dialog.close();
+  };
+
+  window.addEventListener("popstate", () => {
+    if (dialog.open) dialog.close();
+  });
+
+  dialog.addEventListener("close", () => {
+    document.documentElement.classList.remove("is-locked");
+    if (history.state?.lightbox) history.back();
+    opener?.focus();
+  });
+
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    requestClose();
+  });
+
+  dialog.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowRight") show(current + 1);
+    if (event.key === "ArrowLeft") show(current - 1);
+  });
+
+  dialog.addEventListener("click", (event) => {
+    if (event.target.closest(".lightbox-close")) requestClose();
+    else if (event.target.closest(".lightbox-next")) show(current + 1);
+    else if (event.target.closest(".lightbox-prev")) show(current - 1);
+    else if (!event.target.closest(".lightbox-img")) requestClose();
+  });
+
+  let startX = 0;
+  let startY = 0;
+  let swiping = false;
+  dialog.addEventListener("pointerdown", (event) => {
+    delete dialog.dataset.swiped;
+    if (event.pointerType === "mouse") return;
+    swiping = true;
+    startX = event.clientX;
+    startY = event.clientY;
+  });
+  dialog.addEventListener("pointerup", (event) => {
+    if (!swiping) return;
+    swiping = false;
+    const dx = event.clientX - startX;
+    const dy = event.clientY - startY;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+      show(current + (dx < 0 ? 1 : -1));
+      dialog.dataset.swiped = "1";
+      setTimeout(() => delete dialog.dataset.swiped, 400);
+    }
+  });
+  dialog.addEventListener("pointercancel", () => {
+    swiping = false;
+  });
+  dialog.addEventListener("click", (event) => {
+    if (dialog.dataset.swiped) {
+      delete dialog.dataset.swiped;
+      event.stopImmediatePropagation();
+    }
+  }, { capture: true });
+
+  links.forEach((link, index) => {
+    link.addEventListener("click", (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+      event.preventDefault();
+      open(index, link);
+    });
+  });
+}
+
 setupAge();
+setupDaytime();
+setupCounter();
 setupProgress();
 setupViewfinder();
 setupReel();
 setupBurger();
 setupEmbeds();
 setupGallery();
+setupLightbox();
 setupEmailCheck();
 setupForm();
 setupHeroVideo();
