@@ -105,7 +105,7 @@ in `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), 
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
   Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
   `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.4` (V3.4 / `v=3.4`).**
+  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=3.5` (V3.5 / `v=3.5`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -364,14 +364,15 @@ Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Fo
 nur die sichtbare Seite).
 
 ### Aktueller Stand (Stand 2026-11-12)
-- **Bewegung (V3.5, Branch `feature/bewegung`):** Sucher-Overlay im Hero, Filmkamera als
+- **Bewegung (V3.5, live seit 2026-11-12, Squash-Merge von `feature/bewegung`):** Sucher-Overlay im Hero, Filmkamera als
   Scroll-Fortschritt (Desktop), Klappe im Kontaktformular, neue Szene 03 Drohne mit 3D-Modell.
   Details unter „Code-Notizen" und „3D-Drohne". Sicherungspunkt vor dem Umbau: Git-Tag
   `vor-animationen` (auf `5501cac`, auch auf GitHub).
-- **Live-Version:** V3.4 ist live (Projekte-Szene mit beiden Kurzfilmen ausgebaut, Datenschutz, s. u.). **Versionsschema seit V3.0:
+- **Live-Version:** **V3.5** (`v=3.5`, Bewegung, s. o.). **Versionsschema seit V3.0:
   Schritte von 0.1** (V2.9 → V3.0 → V3.1 …), s. „Konventionen". (Ablauf: … → V2.9 =
   E-Mail-Live-Prüfung → V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig →
-  V3.2 = Papierton fast weiß → V3.3 = Untertitel aus → V3.4 = Projekte-Szene ausgebaut.)
+  V3.2 = Papierton fast weiß → V3.3 = Untertitel aus → V3.4 = Projekte-Szene ausgebaut →
+  V3.5 = Bewegung: Sucher-Overlay, Filmkamera, Drohnen-Szene, Klappe.)
 - **⚠️ Projekte-Szene ist ausgebaut (seit V3.4, Datenschutz):** Die zwei Kurzfilme („Was kommt
   danach?" / Postcard-Challenge und ALLEIN) sind **nicht** auf der Seite, solange die
   Datenschutzvereinbarungen mit den beteiligten Personen nicht unterschrieben sind. Der komplette
@@ -542,6 +543,10 @@ nur die sichtbare Seite).
   **Geprüft** mit Playwright und lokalem Chrome: keine Konsolenfehler (1440×900, 390×844), ohne JS
   und mit reduced motion alles lesbar, am Handy kein three.js und kein GLB im Netzwerk-Log, kein
   horizontaler Überlauf ab 360 px. Gewichte und Lighthouse stehen unter „Lokal am Mac prüfen".
+  Danach unabhängiger Prüfer (Befunde behoben, s. dort) und Betreiber-Hinweis zur mitdrehenden
+  Nabe umgesetzt. Version 3.4 → 3.5 (Cache-Buster + Footer-Marker in allen drei HTML-Dateien),
+  `sitemap.xml` `lastmod` der Startseite auf 2026-11-12. Wegen des Umfangs erst nach Freigabe
+  gemergt (Ausnahme von „immer gleich mergen").
 - **2026-09-08 — Projekte-Szene ausgebaut, Datenschutz (V3.4):** Betreiberwunsch: Die beiden
   Kurzfilme („Was kommt danach?" / Postcard-Challenge, `5XbbUtZ45v0`, und ALLEIN, `QDq6b3w08eM`)
   müssen runter, bis die Datenschutzvereinbarungen mit den beteiligten Personen unterschrieben sind
