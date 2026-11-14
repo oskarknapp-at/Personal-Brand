@@ -290,6 +290,27 @@ body.menu-open { overflow: hidden; }
   margin-bottom: clamp(2.5rem, 6vh, 5rem);
 }
 
+.scene-title--page { font-size: clamp(2.2rem, 9vw, 6.5rem); }
+
+.scene-title--group {
+  font-size: clamp(1.7rem, 6vw, 4.5rem);
+  overflow-wrap: break-word;
+}
+
+.scene-kicker {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-stretch: 100%;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: calc(1rem - clamp(2.5rem, 6vh, 5rem)) 0 clamp(2rem, 5vh, 3rem);
+}
+
+.scene-title .scene-kicker { margin: 1.2rem 0 0; }
+
 .scene-title--wrap {
   hyphens: manual;
   overflow-wrap: break-word;
@@ -338,6 +359,18 @@ body.menu-open { overflow: hidden; }
 }
 
 .hero-line { display: block; }
+
+.hero-role {
+  display: block;
+  margin-top: 1rem;
+  font-family: var(--mono);
+  font-size: clamp(0.72rem, 1.3vw, 0.9rem);
+  font-weight: 600;
+  font-stretch: 100%;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+}
 
 .hero-line--offset {
   margin-left: clamp(2rem, 12vw, 12rem);
@@ -598,7 +631,21 @@ body.menu-open { overflow: hidden; }
 
 .drone-info { grid-column: 9 / 13; }
 
+.drone-text {
+  max-width: 34ch;
+  margin: 0 0 clamp(1.5rem, 4vh, 2.5rem);
+  line-height: 1.6;
+}
+
 .drone-facts { margin: 0; }
+
+.drone-aerial { margin: clamp(2.5rem, 7vh, 4.5rem) 0 0; }
+
+.drone-aerial img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
 
 .drone-fact {
   display: flex;
@@ -718,7 +765,8 @@ body.menu-open { overflow: hidden; }
 .journey-item--down { margin-top: 3rem; }
 .journey-item--lower { margin-top: 6rem; }
 
-.journey-cta {
+.journey-cta,
+.gallery-more {
   display: inline-block;
   margin-top: 3rem;
   font-family: var(--mono);
@@ -732,7 +780,10 @@ body.menu-open { overflow: hidden; }
   transition: background 200ms ease-out;
 }
 
-.journey-cta:hover { background: var(--ink); }
+.journey-cta:hover,
+.gallery-more:hover { background: var(--ink); }
+
+.gallery-more { margin-top: 2rem; }
 
 .work-intro { max-width: 48ch; margin: 0 0 2.5rem; }
 

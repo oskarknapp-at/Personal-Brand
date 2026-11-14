@@ -1,20 +1,89 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://okmedia.at/</loc>
-    <lastmod>2026-11-12</lastmod>
+    <lastmod>2026-11-14</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/stift-melk-im-winter.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/storchennest-loosdorf.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/weinberge-spitz-an-der-donau.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/smaragdeidechsen-pielach-melk.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/luftaufnahme-schallaburg.jpg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://okmedia.at/fotografie/</loc>
+    <lastmod>2026-11-14</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/stift-melk-im-winter.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/storchennest-loosdorf.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/kuerbisfeld-loosdorf.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/luftaufnahme-schallaburg.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/smaragdeidechsen-pielach-melk.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/biene-auf-bluete-loosdorf.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/rapsfeld-huerm.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/weinberge-spitz-an-der-donau.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/luftaufnahme-kartause-aggsbach.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/landhausviertel-st-poelten.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/sparkasse-domplatz-st-poelten.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/himmelstreppe-mariazellerbahn-matzersdorf.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/sportflugzeug-flugplatz-voeltendorf.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/abenddaemmerung-feld-am-see.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/japanmakak-affenberg-landskron.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://okmedia.at/assets/meer-mit-boot-kassandra.jpg</image:loc>
+    </image:image>
   </url>
   <url>
     <loc>https://okmedia.at/impressum/</loc>
-    <lastmod>2026-07-11</lastmod>
+    <lastmod>2026-11-14</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
     <loc>https://okmedia.at/datenschutz/</loc>
-    <lastmod>2026-07-11</lastmod>
+    <lastmod>2026-11-14</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
