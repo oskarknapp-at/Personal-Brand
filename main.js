@@ -211,37 +211,62 @@ function justifyGallery(grid) {
     item._ar = w > 0 && h > 0 ? w / h : 1.5;
   });
 
+  const fill = "fill" in grid.dataset;
+
   const layout = () => {
     const containerW = grid.clientWidth;
     if (!containerW) return;
     const gap = parseFloat(getComputedStyle(grid).gap) || 8;
     const target = containerW < 560 ? 190 : containerW < 900 ? 225 : 260;
+    const rowHeight = (row) =>
+      (containerW - gap * (row.length - 1)) / row.reduce((sum, item) => sum + item._ar, 0);
 
-    const flush = (row, arSum, isLast) => {
-      const avail = containerW - gap * (row.length - 1);
-      let h = avail / arSum;
-
-      if (isLast && h > target * 1.3) h = target;
-      h = Math.floor(h);
+    const flush = (row) => {
+      const h = Math.floor(Math.min(rowHeight(row), target * 2));
       row.forEach((item) => {
         item.style.height = `${h}px`;
         item.style.width = `${Math.floor(h * item._ar)}px`;
       });
     };
 
-    let row = [];
-    let arSum = 0;
-    items.forEach((item) => {
-      row.push(item);
-      arSum += item._ar;
-      const avail = containerW - gap * (row.length - 1);
-      if (avail / arSum <= target) {
-        flush(row, arSum, false);
-        row = [];
-        arSum = 0;
+    if (fill) {
+      const maxRows = containerW < 900 ? 2 : 1;
+      const rows = [];
+      let row = [];
+      for (const item of items) {
+        row.push(item);
+        if (rowHeight(row) <= target) {
+          rows.push(row);
+          row = [];
+          if (rows.length === maxRows) break;
+        }
       }
-    });
-    if (row.length) flush(row, arSum, true);
+      if (!rows.length) rows.push(row);
+      const shown = new Set(rows.flat());
+      items.forEach((item) => {
+        item.hidden = !shown.has(item);
+      });
+      rows.forEach(flush);
+      return;
+    }
+
+    const cost = [0];
+    const start = [0];
+    for (let end = 1; end <= items.length; end += 1) {
+      cost[end] = Infinity;
+      for (let begin = 0; begin < end; begin += 1) {
+        const c = cost[begin] + (rowHeight(items.slice(begin, end)) - target) ** 2;
+        if (c < cost[end]) {
+          cost[end] = c;
+          start[end] = begin;
+        }
+      }
+    }
+    const rows = [];
+    for (let end = items.length; end > 0; end = start[end]) {
+      rows.unshift(items.slice(start[end], end));
+    }
+    rows.forEach(flush);
   };
 
   grid.classList.add("is-justified");

@@ -76,6 +76,7 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
    Platzhalter-IDs (`DEINE_…`) zeigen „VIDEO FOLGT".
    3b. `setupGallery()` + `justifyGallery(grid)` – justiertes Reihen-Layout für **jedes**
    `.gallery-grid` (seit V4.1, die Unterseite hat eins pro Ortsgruppe), Fotos werden nicht beschnitten.
+   Seit V4.2 sind **alle Reihen voll breit** (s. „Code-Notizen“, Galerie-Reihen).
 4. `setupForm()` – Kontaktformular via **Web3Forms** (`fetch` auf `api.web3forms.com/submit`),
    ohne Reload. `access_key` steht als hidden input in `index.html` (öffentlich, kein Secret).
    4b. `setupEmailCheck()` + `editDistance()` / `suggestDomain()` / `emailProblem()` – Live-Prüfung
@@ -103,7 +104,8 @@ in `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), 
 `.counter-reel` (in `.about-number`), `data-time="nacht"` am Hero-Szenenkopf.
 
 ## JS-Hooks (data-Attribute in HTML)
-`data-age`, `data-split` (Text→Buchstaben), `data-tc` (Timecode), `data-yt` (YouTube-ID), `data-animate` (Scroll-Reveal).
+`data-age`, `data-split` (Text→Buchstaben), `data-tc` (Timecode), `data-yt` (YouTube-ID), `data-animate` (Scroll-Reveal),
+`data-fill` (Galerie zeigt nur so viele Fotos, wie volle Reihen ergeben, seit V4.2).
 
 ## Design-Tokens (`:root` in style.css)
 `--paper #FAF7F1`, `--ink #1C1B19`, `--red #E63321` (einzige Akzentfarbe im Layout),
@@ -120,7 +122,7 @@ in `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), 
   Bei **jeder** Änderung, die live geht, `N` in **allen vier** HTML-Dateien (`index.html`,
   `fotografie/`, `impressum/`, `datenschutz/`) um 0.1 erhöhen — auch bei reinen HTML-Änderungen, damit
   der sichtbare Marker mitwandert und Betreiber + Claude denselben Stand ablesen.
-  **Aktuell `N=4.1` (V4.1 / `v=4.1`).**
+  **Aktuell `N=4.2` (V4.2 / `v=4.2`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -382,6 +384,17 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
   der jeweiligen Seite, `associatedMedia`, Sitemap). Prüfen auf Metadaten:
   `exiftool -r -if '$EXIF:all or $XMP:all or $GPS:all' -p '$Directory/$FileName' assets`
   (darf nur `assets/signatur/portrait.png` mit reinem sRGB-Profil melden, das ist unkritisch).
+- **Galerie-Reihen (seit V4.2, Betreiber: „keine Lücke, kein Zufall“):** Zwei Modi in
+  `justifyGallery`. **Startseite (`data-fill`):** Im HTML stehen alle 16 Fotos in fester Reihenfolge
+  (die vier Lieblingsfotos zuerst, dann wie auf der Unterseite). JS füllt Reihen gierig, bis eine Reihe
+  nicht höher als die Zielhöhe ist, und zeigt nur volle Reihen: unter 900 px Rasterbreite 2 Reihen,
+  darüber 1 Reihe. Der Rest bekommt `hidden` (wird dank `loading="lazy"` nicht geladen). Gemessen:
+  375 px → 4 Fotos, 768 px → 6, 1024 px → 3, 1280 px → 4. **Kein Zufall** (Betreiber: zu verwirrend).
+  Ohne JS zeigt CSS die ersten 4 (`.gallery-grid[data-fill]:not(.is-justified) .gallery-item:nth-child(n+5)`).
+  Die Großansicht blättert durch alle 16, auch die ausgeblendeten. **Unterseite (ohne `data-fill`):**
+  Alle Fotos bleiben, die Aufteilung auf Reihen kommt aus einer kleinen dynamischen Programmierung,
+  die Σ (Reihenhöhe − Zielhöhe)² minimiert. Jede Reihe ist voll breit, kein Foto steht allein in
+  einer kurzen letzten Reihe. Reihenhöhe höchstens doppelte Zielhöhe.
 - **Showreel-`VideoObject`:** `contentUrl` ist die Datei im Repo, `thumbnailUrl` das Standbild
   `assets/showreel-poster.jpg` (erstes Bild, `ffmpeg -i assets/show_reel.mp4 -frames:v 1
   -map_metadata -1 -q:v 3`), `uploadDate` ist der erste Commit der Datei
@@ -477,6 +490,9 @@ Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Fo
 nur die sichtbare Seite).
 
 ### Aktueller Stand (Stand 2026-11-14)
+- **V4.2 (2026-11-14):** Startseiten-Galerie zeigt je nach Breite so viele der 16 Fotos, dass die
+  Reihen voll sind (feste Reihenfolge, kein Zufall). Unterseite: Reihen gleichmäßig verteilt, keine
+  Lücken mehr. Details unter „Code-Notizen“, Galerie-Reihen.
 - **V4.1 (2026-11-14): Lokale SEO.** Ziel-Begriffe: Videograf Mostviertel, Videograf Melk/Loosdorf,
   Fotograf Loosdorf/Melk, Drohnenaufnahmen Mostviertel. Neue Texte in Hero, About, Fotos und Drohne,
   Title/Description/OG neu, H1 mit Mono-Zeile, Unterseite `/fotografie/` mit 16 Fotos in vier
@@ -499,7 +515,7 @@ nur die sichtbare Seite).
   Scroll-Fortschritt (Desktop), Klappe im Kontaktformular, neue Szene 03 Drohne mit 3D-Modell.
   Details unter „Code-Notizen" und „3D-Drohne". Sicherungspunkt vor dem Umbau: Git-Tag
   `vor-animationen` (auf `5501cac`, auch auf GitHub).
-- **Live-Version:** **V4.1** (`v=4.1`, s. o.). **Versionsschema seit V3.0:
+- **Live-Version:** **V4.2** (`v=4.2`, s. o.). **Versionsschema seit V3.0:
   Schritte von 0.1** (V2.9 → V3.0 → V3.1 …), s. „Konventionen". (Ablauf: … → V2.9 =
   E-Mail-Live-Prüfung → V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig →
   V3.2 = Papierton fast weiß → V3.3 = Untertitel aus → V3.4 = Projekte-Szene ausgebaut →
@@ -507,7 +523,7 @@ nur die sichtbare Seite).
   Drohne am Handy, Abheben, Showreel klein, Slug-Tageszeit, Zählwerk, Klappe, Großansicht →
   V3.7 = Klappe zurück auf V3.5, anime.js selbst gehostet → V3.8 = Propeller-Unschärfe,
   Zählwerk langsamer → V3.9 = Standgas, schnell nur beim Abheben → V4.0 = Sucher-Overlay weg →
-  V4.1 = lokale SEO, Unterseite Fotografie.)
+  V4.1 = lokale SEO, Unterseite Fotografie → V4.2 = Galerie-Reihen immer voll.)
 - **⚠️ Projekte-Szene ist ausgebaut (seit V3.4, Datenschutz):** Die zwei Kurzfilme („Was kommt
   danach?" / Postcard-Challenge und ALLEIN) sind **nicht** auf der Seite, solange die
   Datenschutzvereinbarungen mit den beteiligten Personen nicht unterschrieben sind. Der komplette
@@ -560,8 +576,9 @@ nur die sichtbare Seite).
   `<video>`, damit `aspect-ratio` greift). `<video>`-Attribute `1280×720`. Grund `#181714`.
 - **Galerie (seit V4.1):** 16 Fotos als WebP in 480/960/voller Breite + JPEG-Fallback via
   `<picture>` (`srcset`/`sizes`), alle ohne EXIF/GPS. Dateinamen nach `motiv-ort.jpg`
-  (z. B. `stift-melk-im-winter.jpg`). Startseite zeigt 4 (Stift Melk, Storchennest Loosdorf,
-  Weinberge Spitz, Smaragdeidechsen Pielach), die Unterseite alle. Die alten Namen (z. B.
+  (z. B. `stift-melk-im-winter.jpg`). Startseite hat seit V4.2 alle 16 im HTML (Stift Melk,
+  Storchennest Loosdorf, Weinberge Spitz, Smaragdeidechsen Pielach zuerst) und zeigt je nach Breite
+  so viele, dass die Reihen voll sind. Die Unterseite zeigt alle. Die alten Namen (z. B.
   `see-abenddaemmerung.jpg`) gibt es nicht mehr. CSS-Absicherung: `.gallery-item picture { display: contents }`.
   **Orte laut Betreiber:** Feld am See (Kärnten), Affenberg Landskron (Kärnten), Flugplatz Völtendorf
   bei St. Pölten, Storchennest und Biene in Loosdorf, Domplatz St. Pölten, Smaragdeidechsen an der
@@ -573,7 +590,7 @@ nur die sichtbare Seite).
 - **Schema.org:** Startseite `@graph` = **`Person`** (jobTitle „Videograf und Fotograf“, Adresse nur
   Loosdorf/3382/Niederösterreich/AT, `knowsAbout`, `hasCredential` A1/A3, `award`, `subjectOf`
   Schulartikel, `sameAs` inkl. Linktree), **`WebSite`**, **`VideoObject`** Showreel und ImageObjects
-  für die 4 Startseiten-Fotos und die Luftaufnahme. Unterseite: `ImageGallery`, `BreadcrumbList`, 16
+  für alle 16 Fotos (seit V4.2 stehen alle im Startseiten-HTML). Unterseite: `ImageGallery`, `BreadcrumbList`, 16
   ImageObjects mit `contentLocation`. Die zwei Kurzfilm-`VideoObject` (ALLEIN = `QDq6b3w08eM`,
   „Was kommt danach?" = `5XbbUtZ45v0`) liegen weiter mit der Projekte-Szene im Archiv (Block 6).
 - **About-Portrait:** Echtes Foto `assets/oskar-knapp-portrait.jpg` (900×1200, 3:4, ~137 KB JPEG,
@@ -674,6 +691,12 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-11-14 — Galerie-Reihen immer voll (V4.2):** Betreiber: Auf der Startseite stand je nach
+  Breite ein Foto allein in der letzten Reihe. Auf Rückfrage entschieden: Anzahl passt sich der
+  Breite an, Auswahl aus allen 16 Fotos, aber **nicht zufällig**, auch nicht täglich wechselnd.
+  Umsetzung über `data-fill` und eine neue Reihenaufteilung für die Unterseite. Geprüft bei 375, 768,
+  1024 und 1280 px auf beiden Seiten: alle Reihen voll breit, kein Überlauf, keine Konsolenfehler.
+  Version 4.1 → 4.2.
 - **2026-11-14 — Lokale SEO und Unterseite Fotografie (V4.1):** Ist-Analyse bestätigte: „Videograf“
   stand nur in Title/Meta/Schema, nie sichtbar; „Keine Auftragsdrehs“ war die einzige Stelle mit
   „Auftrag“; Fotos ohne jeden Ortsbezug. Umgesetzt nach Betreiber-OK: Title „Oskar Knapp / Videograf
