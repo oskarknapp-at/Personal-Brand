@@ -197,8 +197,10 @@ function setupEmbeds() {
 }
 
 function setupGallery() {
-  const grid = $(".gallery-grid");
-  if (!grid) return;
+  $$(".gallery-grid").forEach(justifyGallery);
+}
+
+function justifyGallery(grid) {
   const items = $$(".gallery-item", grid);
   if (!items.length) return;
 
@@ -524,30 +526,37 @@ function initMotion({ animate, createTimeline, onScroll, stagger, utils }) {
   });
 
   const heroChars = $$(".hero-name .char");
-  const heroRest = [".hero-sub", ".scroll-hint"];
+  if (heroChars.length) {
+    const heroRest = [".hero-role", ".hero-sub", ".scroll-hint"];
 
-  utils.set(".scene--hero .scene-head", { opacity: 0 });
-  utils.set(heroChars, { opacity: 0, translateY: "0.35em" });
-  utils.set(".hero-statement", { opacity: 0, rotate: -5 });
-  utils.set(heroRest, { opacity: 0 });
+    utils.set(".scene--hero .scene-head", { opacity: 0 });
+    utils.set(heroChars, { opacity: 0, translateY: "0.35em" });
+    utils.set(".hero-statement", { opacity: 0, rotate: -5 });
+    utils.set(heroRest, { opacity: 0 });
 
-  const heroTimeline = createTimeline({ defaults: { ease: "outQuad" } });
-  heroTimeline
-    .add(".scene--hero .scene-head", { opacity: 1, duration: 400 })
-    .add(heroChars, {
-      opacity: 1,
-      translateY: "0em",
-      duration: 500,
-      delay: stagger(28),
-    }, "-=200")
+    const heroTimeline = createTimeline({ defaults: { ease: "outQuad" } });
+    heroTimeline
+      .add(".scene--hero .scene-head", { opacity: 1, duration: 400 })
+      .add(heroChars, {
+        opacity: 1,
+        translateY: "0em",
+        duration: 500,
+        delay: stagger(28),
+      }, "-=200")
 
-    .add(".hero-statement", {
-      opacity: 1,
-      rotate: 0,
-      duration: 450,
-      ease: "outBack",
-    }, "-=250")
-    .add(heroRest, { opacity: 1, duration: 400 }, "-=200");
+      .add(".hero-statement", {
+        opacity: 1,
+        rotate: 0,
+        duration: 450,
+        ease: "outBack",
+      }, "-=250")
+      .add(heroRest, { opacity: 1, duration: 400 }, "-=200");
+  }
+
+  const reveal = (target, enter) =>
+    target.getBoundingClientRect().top < window.innerHeight * 0.9
+      ? true
+      : onScroll({ target, enter, sync: "play" });
 
   $$(".scene-title").forEach((title) => {
     const chars = $$(".char", title);
@@ -560,7 +569,7 @@ function initMotion({ animate, createTimeline, onScroll, stagger, utils }) {
       delay: stagger(20),
       ease: "outQuad",
 
-      autoplay: onScroll({ target: title, enter: "bottom-=10% top", sync: "play" }),
+      autoplay: reveal(title, "bottom-=10% top"),
     });
   });
 
@@ -577,7 +586,7 @@ function initMotion({ animate, createTimeline, onScroll, stagger, utils }) {
       onUpdate: () => {
         tcEl.textContent = `TC ${framesToTc(counter.f)}`;
       },
-      autoplay: onScroll({ target: tcEl, enter: "bottom-=5% top", sync: "play" }),
+      autoplay: reveal(tcEl, "bottom-=5% top"),
     });
   });
 
@@ -588,7 +597,7 @@ function initMotion({ animate, createTimeline, onScroll, stagger, utils }) {
       translateY: 0,
       duration: 550,
       ease: "outQuad",
-      autoplay: onScroll({ target: el, enter: "bottom-=8% top", sync: "play" }),
+      autoplay: reveal(el, "bottom-=8% top"),
     });
   });
 }
@@ -662,7 +671,8 @@ function setupReel() {
 
   const marks = scenes.map((scene, index) => {
     const number = String(index + 1).padStart(2, "0");
-    const title = $(".scene-title", scene)?.textContent.trim() || "Start";
+    const heading = $(".scene-title", scene);
+    const title = (heading && ($("[data-split]", heading) ?? heading))?.textContent.trim() || "Start";
     const link = document.createElement("a");
     link.className = "reel-mark";
     link.href = `#${scene.id}`;

@@ -1,20 +1,22 @@
 # Oskar Knapp
 
-> Persönliche Portfolio-Website von Oskar Knapp, jungem Filmemacher und Videografen aus Loosdorf im Mostviertel, Niederösterreich (Österreich). Kurzfilme, Fotografie und eine fortlaufende YouTube-Doku-Serie über seinen Weg in die Filmbranche — alles selbst geschrieben, gedreht und geschnitten. Sprache der Seite: Deutsch.
+> Persönliche Portfolio-Website von Oskar Knapp, Videograf und Fotograf aus Loosdorf bei Melk im Mostviertel, Niederösterreich (Österreich). Kurzfilme, Fotografie und Drohnenaufnahmen aus dem Mostviertel und der Wachau, alles selbst gedreht, fotografiert und geschnitten. Sprache der Seite: Deutsch.
 
-Oskar Knapp (geb. 2010) besucht die IT-HTL Ybbs mit Schwerpunkt Medientechnik. Sein erster eigener Kurzfilm ist ALLEIN, ein Drama über Mobbing. Mit dem Teamprojekt „Was kommt danach?" gewann er den Sonderpreis der Jury in der Kategorie Clip bei der Postcard-Challenge 2025/26, vergeben von der Diözese St. Pölten im Mai 2026. Auf YouTube dokumentiert er seinen Lernweg als Doku-Serie: keine Tutorials, sondern echte Projekte inklusive Fehlern.
+Oskar Knapp (geb. 2010) besucht die IT-HTL Ybbs mit Schwerpunkt Medientechnik. Sein erster eigener Kurzfilm ist ALLEIN, ein Drama über Mobbing. Gemeinsam mit drei Klassenkollegen hat er den Film „Was kommt danach?“ gemacht. Dafür gab es den Sonderpreis der Jury in der Kategorie Clip, Postcard-Challenge 2025/26 der Diözese St. Pölten (Abteilung Schule), verliehen am 20. Mai 2026 ([Bericht der Schule](https://www.sz-ybbs.ac.at/top-news/schueler-der-1ahit-gewinnen-sonderpreis-bei-der-postcard-challenge)). Er fliegt eine DJI Mavic 3 Classic und hat den EU-Kompetenznachweis A1/A3.
 
 ## Seiten
 
-- [Startseite](https://okmedia.at/): Fotogalerie, Drohne, About und Kontakt auf einer Seite
+- [Startseite](https://okmedia.at/): Showreel, Fotos, Drohne mit Luftaufnahme der Schallaburg, About und Kontakt auf einer Seite
+- [Fotografie](https://okmedia.at/fotografie/): alle Fotos, nach Orten sortiert (Loosdorf, Melk und Umgebung, Wachau, St. Pölten, Unterwegs)
 - [Impressum](https://okmedia.at/impressum/): Anbieterkennzeichnung
 - [Datenschutz](https://okmedia.at/datenschutz/): Datenschutzerklärung
 
 ## Profile
 
-- [YouTube](https://www.youtube.com/@Oskar_Knapp): Doku-Serie über den Weg in die Filmbranche
+- [YouTube](https://www.youtube.com/@Oskar_Knapp)
 - [Instagram](https://www.instagram.com/oskarknapp.at/)
 - [TikTok](https://www.tiktok.com/@oskarknapp.at)
+- [Linktree](https://linktr.ee/oskarknapp)
 
 ## Kontakt
 

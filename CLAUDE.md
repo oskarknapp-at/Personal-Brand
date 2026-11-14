@@ -7,7 +7,8 @@ Orientierung für Claude Code. Ziel: Struktur kennen, ohne alle Dateien neu zu s
 > **Pflicht:** Diesen Abschnitt nach jeder erledigten Aufgabe aktualisieren.
 
 ## Was das ist
-Statische **Ein-Seiten-Portfolio-Website** (Oskar Knapp, Videograf). Live: `okmedia.at`.
+Statische **Ein-Seiten-Portfolio-Website** (Oskar Knapp, Videograf und Fotograf aus Loosdorf) mit
+einer Unterseite `/fotografie/` (seit V4.1). Live: `okmedia.at`.
 Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS.
 
 ## Stack & harte Regeln
@@ -27,16 +28,17 @@ Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS
   beim Seitenaufbau, nie bei `prefers-reduced-motion` oder `saveData`. Seit V3.6 auch am Handy.
 - **Alle Animationen ≤ 600 ms.** **Ausnahmen seit V3.6 (Betreiber-Wunsch):** Ausklappen der Drohne
   900 ms, Bildzählwerk im About 1050 bzw. 1300 ms (seit V3.8, vorher 700/850). Die Großansicht blendet in 250 ms über.
-- **⚠️ KEIN KOMMENTAR IM AUSGELIEFERTEN CODE (PFLICHT):** `index.html`, `impressum/index.html`,
-  `datenschutz/index.html`, `main.js`, `style.css` bleiben **komplett kommentarfrei** — kein
+- **⚠️ KEIN KOMMENTAR IM AUSGELIEFERTEN CODE (PFLICHT):** `index.html`, `fotografie/index.html`,
+  `impressum/index.html`, `datenschutz/index.html`, `main.js`, `style.css` bleiben **komplett kommentarfrei** — kein
   `<!-- … -->`, kein `/* … */`, kein `//`. **Jede** Erklärung, Begründung oder Notiz gehört in
   **diese CLAUDE.md** (Abschnitt „Code-Notizen" für dauerhaftes Wissen, „Arbeitsprotokoll" für den
   Verlauf), niemals in den Quelltext. Betrifft auch TODOs und Platzhalter-Hinweise → als „Offene
   Punkte" hier führen, nicht als Kommentar im Code.
 - **⚠️ VERSION — BEI JEDEM DEPLOY PFLICHT (EINE Zahl `N`, überall gleich):** Bei **jeder**
   Änderung, die live geht, `N` um **0.1** erhöhen (Schema seit 2026-07-25: `3.0` → `3.1` → … →
-  `3.9` → `4.0`) und **in allen drei** HTML-Dateien
-  (`index.html`, `impressum/index.html`, `datenschutz/index.html`) an **beiden** Stellen setzen:
+  `3.9` → `4.0`) und **in allen vier** HTML-Dateien (seit V4.1)
+  (`index.html`, `fotografie/index.html`, `impressum/index.html`, `datenschutz/index.html`) an
+  **beiden** Stellen setzen:
   1. **Cache-Buster** `style.css?v=N` / `main.js?v=N` (zwingt Browser, neue Dateien zu laden).
   2. **Sichtbare Footer-Version** `<span>SCHNITT: ENDE / VN</span>` — dient dem Betreiber als
      **Deploy-Marker**: Er sieht an der Live-Seite sofort, welche Version online ist, und kann
@@ -51,12 +53,14 @@ Kein Framework, kein Build-Step, kein `package.json`. Reines HTML/CSS/Vanilla-JS
 ## Dateien
 | Datei | Inhalt |
 |---|---|
-| `index.html` | Die gesamte Seite. Szenen: 01 Hero, 02 Fotografie, 03 Drohne, 04 About, 05 Kontakt. Das Poster des Showreels steht als WebP-Daten-URI im `<video>` (480×270, 8 KB). (Projekte-Szene, Journey, „Zusammenarbeit" + Projekte 3/4 ausgebaut, s. „Ausgeblendete Inhalte".) |
+| `index.html` | Die Startseite (One-Pager). Szenen: 01 Hero, 02 Fotos (4 Bilder + Knopf „ALLE FOTOS“ zur Unterseite), 03 Drohne (mit Luftaufnahme Schallaburg), 04 About, 05 Kontakt. Das Poster des Showreels steht als WebP-Daten-URI im `<video>` (480×270, 8 KB). (Projekte-Szene, Journey, „Zusammenarbeit" + Projekte 3/4 ausgebaut, s. „Ausgeblendete Inhalte".) |
+| `fotografie/index.html` | Unterseite Fotografie (seit V4.1): alle Fotos in Ortsgruppen, eigener Title/H1 für „Fotograf Loosdorf / Melk“. Nur über „ALLE FOTOS“ und die Sitemap erreichbar, **nicht** über die Navigation. Lädt `../main.js` und `../style.css`. |
 | `main.js` | Gesamtes Verhalten, in nummerierte Abschnitte (1–6) gegliedert – siehe unten. |
 | `style.css` | Gesamtes Styling. Abschnitte per `/* ---------- … ---------- */`. Design-Tokens in `:root`. |
 | `impressum/`, `datenschutz/` | Rechtstexte, eigene `index.html`, teilen sich `../style.css`. |
 | `assets/` | Fotos, `fonts/`, `drohne/` (Standbild als WebP in 480/960/1600 und `mavic-3-classic.glb`), `vendor/` (three.js-Bündel und anime.js, die einzigen Dateien mit Lizenz-Kommentar, s. „3D-Drohne"). |
-| `robots.txt`, `sitemap.xml` | SEO. |
+| `robots.txt`, `sitemap.xml` | SEO. Die Sitemap hat seit V4.1 Bild-Einträge (`image:image`) für alle Galerie-Fotos. |
+| `assets/og-*.jpg`, `assets/showreel-poster.jpg` | Vorschaubilder 1200×630 für `og:image` (Start: Schallaburg, Unterseite: Stift Melk) und das Poster-Still (erstes Bild des Showreels) für `VideoObject.thumbnailUrl`. Werden von der Seite selbst nicht geladen. |
 | `.github/workflows/static.yml` | Deploy (s. u.). |
 
 ## main.js – Abschnitte (Funktion → Zweck)
@@ -70,7 +74,8 @@ Alle `setup*()` werden am Dateiende aufgerufen; `initMotion()` nur bei erwünsch
 3. `loadYouTubeApi()` + `setupEmbeds()` – Klick-zu-Laden-YouTube via **IFrame-Player-API**,
    `onReady → playVideo()`. Ladezustand („LÄDT …", Thumbnail bleibt), 10-s-Timeout-Fallback.
    Platzhalter-IDs (`DEINE_…`) zeigen „VIDEO FOLGT".
-   3b. `setupGallery()` – justiertes Reihen-Layout, Fotos werden nicht beschnitten.
+   3b. `setupGallery()` + `justifyGallery(grid)` – justiertes Reihen-Layout für **jedes**
+   `.gallery-grid` (seit V4.1, die Unterseite hat eins pro Ortsgruppe), Fotos werden nicht beschnitten.
 4. `setupForm()` – Kontaktformular via **Web3Forms** (`fetch` auf `api.web3forms.com/submit`),
    ohne Reload. `access_key` steht als hidden input in `index.html` (öffentlich, kein Secret).
    4b. `setupEmailCheck()` + `editDistance()` / `suggestDomain()` / `emailProblem()` – Live-Prüfung
@@ -112,9 +117,10 @@ in `.form-status`), `.drone-canvas` (in `.drone-stage`, dazu Klasse `is-live`), 
   `3.2` usw.; nach `3.9` kommt `4.0`. Der Cache-Buster trägt dieselbe Zahl (`?v=3.0`).
   - Cache-Buster: `style.css?v=N`, `main.js?v=N` (im `<head>`).
   - Sichtbare Footer-Version: `<span>SCHNITT: ENDE / VN</span>` (Deploy-Marker für den Betreiber).
-  Bei **jeder** Änderung, die live geht, `N` in **allen drei** HTML-Dateien (`index.html`,
-  `impressum/`, `datenschutz/`) um 1 erhöhen — auch bei reinen HTML-Änderungen, damit der sichtbare
-  Marker mitwandert und Betreiber + Claude denselben Stand ablesen. **Aktuell `N=4.0` (V4.0 / `v=4.0`).**
+  Bei **jeder** Änderung, die live geht, `N` in **allen vier** HTML-Dateien (`index.html`,
+  `fotografie/`, `impressum/`, `datenschutz/`) um 0.1 erhöhen — auch bei reinen HTML-Änderungen, damit
+  der sichtbare Marker mitwandert und Betreiber + Claude denselben Stand ablesen.
+  **Aktuell `N=4.1` (V4.1 / `v=4.1`).**
 - Kommentare & Commit-/PR-Sprache: **Deutsch** (wie im bestehenden Code).
 - Neue Videos: echte 11-stellige YouTube-ID in `data-yt` eintragen, `DEINE_YOUTUBE_ID` ersetzen.
 
@@ -339,6 +345,47 @@ Begründungen hier. Ergänzen, wenn eine Entscheidung sonst nur aus dem Code ers
 - **Text-Split (`data-split`)** injiziert den ungeteilten Text als `.sr-only`-Span (Screenreader)
   und setzt die Einzelbuchstaben `aria-hidden` — **nicht** `aria-label` auf das Element (auf
   generischen `<span>` laut ARIA unzulässig, s. Historie V20).
+- **Lokale SEO, harte Grenze (seit V4.1):** Kein Gewerbe, also nur beschreiben, wer Oskar ist und was
+  er macht („Videograf und Fotograf aus Loosdorf im Mostviertel“), nie anbieten. Keine Wörter wie
+  anbieten, buchen, Preis (außer dem Sonderpreis), Paket, Anfrage für Aufträge. Kein `LocalBusiness`-
+  oder `Service`-Schema. **Ortsnamen immer so schreiben:** Loosdorf, Melk, „Loosdorf bei Melk“,
+  Mostviertel, Wachau, Niederösterreich, St. Pölten. Keine Abkürzungen (NÖ, Bez.).
+- **Preis überall im gleichen Wortlaut** (About, Schema `award`, `llms.txt`, laut Urkunde):
+  „Sonderpreis der Jury in der Kategorie Clip, Postcard-Challenge 2025/26 der Diözese St. Pölten
+  (Abteilung Schule), verliehen am 20. Mai 2026“. Teamprojekt „gemeinsam mit drei Klassenkollegen“,
+  **keine Namen** der anderen. Quelle: Schulartikel (Link im About, `Person.subjectOf` als
+  `NewsArticle`, `datePublished` 2026-05-29).
+- **H1 der Startseite:** Der große Schriftzug bleibt, darunter steht **in** der H1 die Mono-Zeile
+  `.hero-role` („VIDEOGRAF / LOOSDORF, MOSTVIERTEL“). Sie ist nicht gesplittet und blendet mit
+  `heroRest` ein. `aria-label` der H1: „Oskar Knapp, Videograf aus Loosdorf im Mostviertel“.
+- **`.scene-kicker`:** Mono-Unterzeile zu einem großen Szenentitel. Auf der Startseite als eigene
+  `<h3>` direkt nach `<h2>FOTOS</h2>` (negativer Abstand nach oben zieht sie unter den Titel), auf der
+  Unterseite **innerhalb** der `<h1>` (dort trägt nur das innere `<span data-split>` den Split).
+  `setupReel()` liest deshalb den Szenennamen aus `[data-split]` im Titel, falls vorhanden.
+- **Inhalte, die beim Laden schon im Bild sind, starten sofort (seit V4.1):** `reveal()` in
+  `initMotion()` gibt für Elemente, deren Oberkante in den oberen 90 % des Fensters liegt, `true`
+  statt `onScroll(...)` zurück. Grund: Auf der Unterseite steht der Szenenkopf ganz oben, und
+  anime.js’ `onScroll` löste erst beim ersten Scrollen aus. Die Seite war bis dahin leer. Die
+  Hero-Timeline läuft nur, wenn es `.hero-name .char` gibt (sonst acht Konsolenwarnungen
+  „No target found“ auf der Unterseite).
+- **Alter:** überall `<span data-age>`, nie fest im Text. Der HTML-Ersatzwert (ohne JS) ist seit
+  V4.1 `16`. Beim nächsten Geburtstag (27.08.) optional nachziehen, mit JS stimmt es immer.
+- **Galerie-Bilder: Daten und Pipeline (seit V4.1).** Dateiname `motiv-ort.jpg`, alt-Text mit Motiv
+  und Ort, Ort **nie raten**, sondern den Betreiber fragen. Jedes Foto: EXIF-Drehung anwenden, in
+  sRGB umrechnen (das Kassandra-Foto war Display P3), längste Seite 1500 px, JPG q82 progressiv **ohne
+  EXIF/GPS/ICC**, dazu WebP q80 in 480/960/voller Breite (unter 1100 px Breite nur 480/voll).
+  Galerie-HTML (Startseite und Unterseite), JSON-LD (Person, VideoObject, ImageObjects mit
+  `contentLocation`, ImageGallery, BreadcrumbList) und `sitemap.xml` wurden aus **einer** Bildliste
+  erzeugt. Das Skript liegt lokal unter `werkzeug-fotos/build.py` (gitignored, wie `drohne-quelle/`),
+  Aufruf mit Pillow: `python build.py --neu`. Zuschnitte für `og:image`: `werkzeug-fotos/og.py`.
+  Wer ohne Skript ein Foto ergänzt, muss es an **allen** Stellen eintragen (Galerie, ImageObject auf
+  der jeweiligen Seite, `associatedMedia`, Sitemap). Prüfen auf Metadaten:
+  `exiftool -r -if '$EXIF:all or $XMP:all or $GPS:all' -p '$Directory/$FileName' assets`
+  (darf nur `assets/signatur/portrait.png` mit reinem sRGB-Profil melden, das ist unkritisch).
+- **Showreel-`VideoObject`:** `contentUrl` ist die Datei im Repo, `thumbnailUrl` das Standbild
+  `assets/showreel-poster.jpg` (erstes Bild, `ffmpeg -i assets/show_reel.mp4 -frames:v 1
+  -map_metadata -1 -q:v 3`), `uploadDate` ist der erste Commit der Datei
+  (`75b0bd6`, 2026-07-23T12:45:14+03:00), `duration` PT31S.
 
 ---
 
@@ -429,7 +476,13 @@ Erledigtes aus „Offene Punkte" streichen, neuen Eintrag in „Historie" (oben 
 Reine Doku-Änderungen an dieser Datei brauchen **keinen** Versions-Bump (der Footer-Marker betrifft
 nur die sichtbare Seite).
 
-### Aktueller Stand (Stand 2026-11-12)
+### Aktueller Stand (Stand 2026-11-14)
+- **V4.1 (2026-11-14): Lokale SEO.** Ziel-Begriffe: Videograf Mostviertel, Videograf Melk/Loosdorf,
+  Fotograf Loosdorf/Melk, Drohnenaufnahmen Mostviertel. Neue Texte in Hero, About, Fotos und Drohne,
+  Title/Description/OG neu, H1 mit Mono-Zeile, Unterseite `/fotografie/` mit 16 Fotos in vier
+  Ortsgruppen (Loosdorf, Melk und Umgebung / Wachau / St. Pölten / Unterwegs), Luftaufnahme
+  Schallaburg in der Drohnen-Szene, echte `og:image`, Showreel-`VideoObject`, ImageObjects mit Ort,
+  Person-Schema erweitert. Details unter „Code-Notizen“.
 - **V4.0 (live seit 2026-11-12):** Sucher-Overlay im Hero ausgebaut, das Showreel läuft wieder ohne
   Einblendungen.
 - **V3.9 (live seit 2026-11-12):** Propeller im Standgas, schnell und unscharf nur beim Abheben,
@@ -446,14 +499,15 @@ nur die sichtbare Seite).
   Scroll-Fortschritt (Desktop), Klappe im Kontaktformular, neue Szene 03 Drohne mit 3D-Modell.
   Details unter „Code-Notizen" und „3D-Drohne". Sicherungspunkt vor dem Umbau: Git-Tag
   `vor-animationen` (auf `5501cac`, auch auf GitHub).
-- **Live-Version:** **V4.0** (`v=4.0`, s. o.). **Versionsschema seit V3.0:
+- **Live-Version:** **V4.1** (`v=4.1`, s. o.). **Versionsschema seit V3.0:
   Schritte von 0.1** (V2.9 → V3.0 → V3.1 …), s. „Konventionen". (Ablauf: … → V2.9 =
   E-Mail-Live-Prüfung → V3.0 = Texte + Pflichtfeld Nachricht → V3.1 = Szenenkopf einzeilig →
   V3.2 = Papierton fast weiß → V3.3 = Untertitel aus → V3.4 = Projekte-Szene ausgebaut →
   V3.5 = Bewegung: Sucher-Overlay, Filmkamera, Drohnen-Szene, Klappe → V3.6 = Drohnen-Fix,
   Drohne am Handy, Abheben, Showreel klein, Slug-Tageszeit, Zählwerk, Klappe, Großansicht →
   V3.7 = Klappe zurück auf V3.5, anime.js selbst gehostet → V3.8 = Propeller-Unschärfe,
-  Zählwerk langsamer → V3.9 = Standgas, schnell nur beim Abheben → V4.0 = Sucher-Overlay weg.)
+  Zählwerk langsamer → V3.9 = Standgas, schnell nur beim Abheben → V4.0 = Sucher-Overlay weg →
+  V4.1 = lokale SEO, Unterseite Fotografie.)
 - **⚠️ Projekte-Szene ist ausgebaut (seit V3.4, Datenschutz):** Die zwei Kurzfilme („Was kommt
   danach?" / Postcard-Challenge und ALLEIN) sind **nicht** auf der Seite, solange die
   Datenschutzvereinbarungen mit den beteiligten Personen nicht unterschrieben sind. Der komplette
@@ -504,14 +558,24 @@ nur die sichtbare Seite).
   Originalformat. CSS: `.hero-frame img, .hero-frame video { aspect-ratio: 16/9; height: auto;
   object-fit: cover }` (`height: auto` überschreibt den `width`/`height`-Attribut-Hint am
   `<video>`, damit `aspect-ratio` greift). `<video>`-Attribute `1280×720`. Grund `#181714`.
-- **Galerie:** 8 Fotos als WebP in 480/960/voller Breite + JPEG-Fallback via `<picture>` (`srcset`/
-  `sizes`). Beschreibende Dateinamen (z. B. `see-abenddaemmerung.jpg`), keine `DSC*`/`IMG_*` mehr.
-  CSS-Absicherung: `.gallery-item picture { display: contents }`.
-- **`llms.txt`** liegt im Repo-Root (Entitäts-Zusammenfassung, ohne kommerzielle Angebote).
-- **Schema.org** (`index.html`): `@graph` enthält seit V3.4 nur noch **`Person`** (mit `alumniOf`
-  IT-HTL Ybbs, `award` und `image`) und **`WebSite`**. Die zwei `VideoObject` (ALLEIN =
-  `QDq6b3w08eM`, „Was kommt danach?" = `5XbbUtZ45v0`, beide mit `uploadDate`) liegen mit dem Rest
-  der Projekte-Szene im Archiv (Block 6).
+- **Galerie (seit V4.1):** 16 Fotos als WebP in 480/960/voller Breite + JPEG-Fallback via
+  `<picture>` (`srcset`/`sizes`), alle ohne EXIF/GPS. Dateinamen nach `motiv-ort.jpg`
+  (z. B. `stift-melk-im-winter.jpg`). Startseite zeigt 4 (Stift Melk, Storchennest Loosdorf,
+  Weinberge Spitz, Smaragdeidechsen Pielach), die Unterseite alle. Die alten Namen (z. B.
+  `see-abenddaemmerung.jpg`) gibt es nicht mehr. CSS-Absicherung: `.gallery-item picture { display: contents }`.
+  **Orte laut Betreiber:** Feld am See (Kärnten), Affenberg Landskron (Kärnten), Flugplatz Völtendorf
+  bei St. Pölten, Storchennest und Biene in Loosdorf, Domplatz St. Pölten, Smaragdeidechsen an der
+  Pielach bei Melk, Landhausviertel St. Pölten, Himmelstreppe bei Matzersdorf (Katastralgemeinde der
+  Stadt St. Pölten, **nicht** Bezirk St. Pölten-Land und nicht Pielachtal), Schallaburg „bei
+  Loosdorf“, Rapsfeld „bei Hürm im Alpenvorland“, Kassandra (Chalkidiki, Griechenland).
+- **`llms.txt`** liegt im Repo-Root (Entitäts-Zusammenfassung, ohne kommerzielle Angebote), seit V4.1
+  mit Unterseite Fotografie, Drohne und Preis im Urkunden-Wortlaut.
+- **Schema.org:** Startseite `@graph` = **`Person`** (jobTitle „Videograf und Fotograf“, Adresse nur
+  Loosdorf/3382/Niederösterreich/AT, `knowsAbout`, `hasCredential` A1/A3, `award`, `subjectOf`
+  Schulartikel, `sameAs` inkl. Linktree), **`WebSite`**, **`VideoObject`** Showreel und ImageObjects
+  für die 4 Startseiten-Fotos und die Luftaufnahme. Unterseite: `ImageGallery`, `BreadcrumbList`, 16
+  ImageObjects mit `contentLocation`. Die zwei Kurzfilm-`VideoObject` (ALLEIN = `QDq6b3w08eM`,
+  „Was kommt danach?" = `5XbbUtZ45v0`) liegen weiter mit der Projekte-Szene im Archiv (Block 6).
 - **About-Portrait:** Echtes Foto `assets/oskar-knapp-portrait.jpg` (900×1200, 3:4, ~137 KB JPEG,
   EXIF entfernt) im `.about-portrait`-`<figure>`; CSS erzwingt `aspect-ratio: 3/4; object-fit: cover`.
   Betreiber lud das Original als `DSC05657.jpg` (3497×4663) auf `main`; jeweils auf 900×1200
@@ -521,20 +585,17 @@ nur die sichtbare Seite).
   (s. o.). Das frühere `<img fetchpriority="high">` gibt es dort nicht mehr.
 
 ### Offene Punkte (TODO)
-- **Luftbild für die Drohnen-Szene (optional, Betreiber liefert):** Datei als
-  `assets/drohne/luftbild.jpg` ablegen (dazu WebP-Varianten nach der Bild-Konvention), dann diesen
-  Block in `index.html` nach `</div>` von `.drone-grid` einsetzen und Breite/Höhe eintragen:
-  ```html
-        <figure class="drone-aerial" data-animate>
-          <img src="assets/drohne/luftbild.jpg" alt="BESCHREIBUNG" loading="lazy" width="BREITE" height="HOEHE">
-        </figure>
-  ```
-  CSS für `.drone-aerial` gibt es noch nicht (volle Breite, Abstand nach oben), mit dem Bild anlegen.
+- **Nach V4.1 (Betreiber, außerhalb des Codes):** In der Search Console `https://okmedia.at/` und
+  `https://okmedia.at/fotografie/` per URL-Prüfung zur Indexierung einreichen, Sitemap neu
+  einreichen, Rich-Results-Test und Schema-Validator auf beiden URLs laufen lassen.
+- **Luftbild in der Drohnen-Szene: erledigt (V4.1)** mit `luftaufnahme-schallaburg` (gleiche Dateien
+  wie in der Galerie, kein eigener `assets/drohne/luftbild.jpg`).
 - **„Stand 11/2026" in der Drohnen-Szene** ist fester Text. Ändern sich Flugzeit (14 h), Strecke
   (124 km) oder Flüge (107), Zahlen **und** Stand in `index.html` nachziehen.
 - **Lizenz des Drohnen-Modells ist nicht belastbar** (Herkunft DJI, s. „3D-Drohne"). Spätestens
   vor der Gewerbeanmeldung neu bewerten.
-- **Placeholder** (Betreiber liefert Medien selbst): `og:image`. Die 3× Journey-Videos
+- **`og:image` erledigt (V4.1):** echte Zuschnitte 1200×630 statt `placehold.co`.
+- **Placeholder** (Betreiber liefert Medien selbst): Die 3× Journey-Videos
   (`data-yt="DEINE_YOUTUBE_ID"` + `placehold.co`-Thumbnails) sind **seit V26 nicht mehr auf der
   Seite** — der ganze Journey-Block liegt im Archiv (s. „Ausgeblendete Inhalte" Block 5) und kommt
   mit echten YouTube-IDs zurück. (Hero-Showreel-Still nicht mehr offen: Der Hero zeigt jetzt das Video. Optional könnte
@@ -613,6 +674,23 @@ nur die sichtbare Seite).
   Playwright (kein `lavfi`, kein H.264-Decode/libvpx-Encode) → für Kompression/WebM/Poster **unbrauchbar**.
 
 ### Historie (neueste oben)
+- **2026-11-14 — Lokale SEO und Unterseite Fotografie (V4.1):** Ist-Analyse bestätigte: „Videograf“
+  stand nur in Title/Meta/Schema, nie sichtbar; „Keine Auftragsdrehs“ war die einzige Stelle mit
+  „Auftrag“; Fotos ohne jeden Ortsbezug. Umgesetzt nach Betreiber-OK: Title „Oskar Knapp / Videograf
+  aus Loosdorf im Mostviertel“, neue Description, H1-Mono-Zeile, Hero/About/Fotos/Drohne-Texte,
+  `<h3>` „FOTOGRAF AUS LOOSDORF BEI MELK“, Knopf „ALLE FOTOS“, Unterseite `/fotografie/`
+  (Title „Fotograf aus Loosdorf bei Melk / Oskar Knapp“), 8 neue Fotos vom Desktop, alle 16 mit
+  Ort im Namen und alt-Text, EXIF/GPS entfernt, Luftaufnahme Schallaburg in der Drohnen-Szene,
+  `og:image` Schallaburg/Stift Melk, Schema (Person erweitert, Showreel-VideoObject, ImageObjects,
+  ImageGallery, BreadcrumbList), Sitemap mit Bildern, `llms.txt`, Footer mit Loosdorf, Preis im
+  Urkunden-Wortlaut. Dazu `reveal()` (Unterseite war bis zum ersten Scrollen leer) und
+  `justifyGallery` für mehrere Galerien. `git config core.fileMode false` gesetzt (Dateirechte-
+  Änderungen tauchten als 56 geänderte Dateien auf). Geprüft: 320/375/1024/1280 px ohne
+  Überlauf, keine Konsolenfehler, JSON-LD parst, alle verlinkten Dateien existieren.
+  **Prüf-Hinweise:** `python3 -m http.server` direkt im Desktop-Ordner hing (macOS-Zugriffsschutz
+  für den Desktop), deshalb aus einer Kopie unter `/tmp` serviert. Ist das Browser-Fenster
+  ausgeblendet, laufen keine Animationen (alles bleibt bei Deckkraft 0), das ist kein Seitenfehler.
+  Version 4.0 → 4.1.
 - **2026-11-12 — Sucher-Overlay ausgebaut (V4.0):** Betreiber: „das camera overlay im showreel weg,
   das ist zu viel“. `VIEWFINDER`, `setupViewfinder()` und alle `.vf*`-Regeln gelöscht (nicht
   auskommentiert), Stand in Git (`6e1399c`). Geprüft bei 1440×900 und 390×844: kein `.vf` im DOM,
@@ -1134,7 +1212,7 @@ Filme nicht öffentlich auf der Seite stehen. **Kein Gewerbe-Thema.** Sobald die
 ```
 ## Filme
 
-- [Was kommt danach? (YouTube)](https://www.youtube.com/watch?v=5XbbUtZ45v0): Kurzfilm, Postcard-Challenge 2025/26, Sonderpreis der Jury (Kategorie Clip)
+- [Was kommt danach? (YouTube)](https://www.youtube.com/watch?v=5XbbUtZ45v0): Kurzfilm, gemeinsam mit drei Klassenkollegen. Sonderpreis der Jury in der Kategorie Clip, Postcard-Challenge 2025/26 der Diözese St. Pölten (Abteilung Schule), verliehen am 20. Mai 2026
 - [ALLEIN (YouTube)](https://www.youtube.com/watch?v=QDq6b3w08eM): Kurzfilm-Drama über Mobbing, Drehbuch/Regie/Kamera/Schnitt: Oskar Knapp
 ```
 
@@ -1172,7 +1250,7 @@ kein `[data-yt]` mehr.
           <div class="project-info">
             <h3 class="project-title">POSTCARD-CHALLENGE</h3>
             <p class="project-meta">KURZFILM / KATEGORIE CLIP / 2025/26</p>
-            <p class="project-desc">Teamprojekt am SZ Ybbs. Sonderpreis der Jury in der Kategorie Clip, vergeben von der Diözese St. Pölten im Mai 2026.</p>
+            <p class="project-desc">Teamprojekt mit drei Klassenkollegen am SZ Ybbs. Sonderpreis der Jury in der Kategorie Clip, Postcard-Challenge 2025/26 der Diözese St. Pölten (Abteilung Schule), verliehen am 20. Mai 2026.</p>
           </div>
         </article>
 
@@ -1205,7 +1283,7 @@ kein `[data-yt]` mehr.
         "@id": "https://okmedia.at/#video-was-kommt-danach",
         "name": "Was kommt danach?",
         "uploadDate": "2026-05-01",
-        "description": "Kurzfilm, Teamprojekt am SZ Ybbs für die Postcard-Challenge 2025/26. Sonderpreis der Jury in der Kategorie Clip, vergeben von der Diözese St. Pölten im Mai 2026.",
+        "description": "Kurzfilm, Teamprojekt mit drei Klassenkollegen am SZ Ybbs. Sonderpreis der Jury in der Kategorie Clip, Postcard-Challenge 2025/26 der Diözese St. Pölten (Abteilung Schule), verliehen am 20. Mai 2026.",
         "thumbnailUrl": "https://okmedia.at/assets/thumbnails/was-kommt-danach.jpg",
         "contentUrl": "https://www.youtube.com/watch?v=5XbbUtZ45v0",
         "embedUrl": "https://www.youtube-nocookie.com/embed/5XbbUtZ45v0",
