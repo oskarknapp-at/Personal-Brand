@@ -594,6 +594,9 @@ body.menu-open { overflow: hidden; }
   height: 100%;
 }
 
+.gallery-item[hidden],
+.gallery-grid[data-fill]:not(.is-justified) .gallery-item:nth-child(n+5) { display: none; }
+
 .drone-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
